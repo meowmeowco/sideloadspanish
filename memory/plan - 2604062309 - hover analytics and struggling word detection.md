@@ -9,6 +9,7 @@ status: active
 
 - Spec: [[spec - sideload - progressive in-page word replacement for language learning]]
 - Parent plan: [[plan - 2604061315 - build sideload browser extension mvp]]
+- Sync implications: [[spec - sync - mullvad-model paid sync with license keys]] — `seen` counts sync cross-device via per-word records (resolved in coherence C1)
 
 The spec already defines per-word state as `{ seen: number, clicked_known: number, tier: number }` and `recordSeen()` exists in storage but is never called. This plan wires that signal, makes it visible, and uses it to detect words the user is struggling with — providing a feedback loop that pure click-to-known misses.
 

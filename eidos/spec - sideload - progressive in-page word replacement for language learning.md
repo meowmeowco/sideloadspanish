@@ -47,7 +47,8 @@ A Chrome/Zen browser extension that replaces English words on web pages with the
 
 ### Progress Tracking
 
-- Per-word state: `{ seen: number, clicked_known: number, tier: number }`
+- Per-word state: `{ seen: number, clicked_known: number, tier: number, known: boolean }`
+- `seen` increments on hover (debounced: once per word per page load) — used for struggling word detection (seen >= 10 times without marking known)
 - Aggregate state: `{ current_tier: number, words_known: number, words_total: number, tier_progress_pct: number }`
 - Stored in **IndexedDB** (local only for MVP)
 - A simple **progress dashboard** accessible from the extension popup:
@@ -109,7 +110,7 @@ sideload/
 
 - **depends on**: browser extension APIs (MV3), IndexedDB
 - **optional dependency**: translation API for hybrid vocab fallback
-- **future**: cloud sync service for cross-device progress (out of MVP scope)
+- **extended by**: [[spec - sync - mullvad-model paid sync with license keys]] (paid cross-device sync of per-word learning records)
 
 ## Verification
 

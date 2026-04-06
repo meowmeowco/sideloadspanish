@@ -178,7 +178,7 @@ sync-worker/
   src/
     index.js          # Worker entry: route /sync, /validate, /webhook
     keys.js           # Key generation, validation, expiry checks
-    sync.js           # G-Set merge logic
+    sync.js           # Blob storage: read/write encrypted payloads (no decryption, no merge)
   wrangler.toml       # Cloudflare config
 ```
 
@@ -189,7 +189,8 @@ sync-worker/
 **Endpoints:**
 | Method | Path | Purpose |
 |--------|------|---------|
-| POST | `/sync` | Push/pull known words (authenticated) |
+| GET | `/sync` | Return stored encrypted blob (authenticated) |
+| PUT | `/sync` | Overwrite stored encrypted blob (authenticated) |
 | POST | `/validate` | Check if a key is valid and active |
 | POST | `/webhook` | Lemon Squeezy payment webhook → create/extend key |
 

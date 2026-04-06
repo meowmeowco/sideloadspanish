@@ -21,6 +21,6 @@ Phase 5 (Dynamic Content + Polish) — 7 items:
 
 - 2.1 - 14 acceptance criteria unchecked (future — sync feature not yet in active plan)
 
-## 3 - Spec Verification: [[spec - sideload - progressive in-page word replacement]]
+## 3 - Spec Verification: [[spec - sideload - progressive in-page word replacement for language learning]]
 
 - 3.1 - 11 verification criteria (mirrors plan items above)
