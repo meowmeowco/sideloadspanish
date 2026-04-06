@@ -1,6 +1,14 @@
-// Sideload Spanish — Background Service Worker
-// Owns the IndexedDB instance and handles storage requests from
-// content scripts and popup via message passing.
+// Sideload Spanish — Background Service Worker (CQRS)
+//
+// Commands (write): mutate word records in IndexedDB, then update read projections.
+// Queries (read): return pre-computed projections — no table scans.
+//
+// Projections (in-memory, rebuilt from IDB on service worker wake):
+//   _progress  — { total, known, tiers: { [tier]: { total, known } } }
+//   _knownSet  — Set<string> of known word keys
+//
+// The projections are the single source of truth for all read operations.
+// They are rebuilt on startup and kept in sync by every command.
 
 // ── IndexedDB ──
 
@@ -15,16 +23,13 @@ function openDB() {
   if (_db) return Promise.resolve(_db);
 
   return new Promise((resolve, reject) => {
-    console.log('[Sideload SW] Opening IndexedDB...');
     const req = indexedDB.open(DB_NAME, DB_VERSION);
 
     req.onupgradeneeded = (e) => {
-      console.log('[Sideload SW] IndexedDB upgrade needed');
       const db = e.target.result;
       if (!db.objectStoreNames.contains(WORDS_STORE)) {
         const store = db.createObjectStore(WORDS_STORE, { keyPath: 'en' });
         store.createIndex('tier', 'tier', { unique: false });
-        store.createIndex('known', 'known', { unique: false });
       }
       if (!db.objectStoreNames.contains(SETTINGS_STORE)) {
         db.createObjectStore(SETTINGS_STORE, { keyPath: 'key' });
@@ -33,15 +38,10 @@ function openDB() {
 
     req.onsuccess = (e) => {
       _db = e.target.result;
-      // Handle connection loss (e.g. after service worker restart)
       _db.onclose = () => { _db = null; };
-      console.log('[Sideload SW] IndexedDB opened');
       resolve(_db);
     };
-    req.onerror = (e) => {
-      console.error('[Sideload SW] IndexedDB open error:', e.target.error);
-      reject(new Error(`IndexedDB: ${e.target.error}`));
-    };
+    req.onerror = (e) => reject(new Error(`IndexedDB: ${e.target.error}`));
   });
 }
 
@@ -51,7 +51,6 @@ function tx(storeName, mode, op) {
       const t = db.transaction(storeName, mode);
       const store = t.objectStore(storeName);
       const req = op(store);
-
       if (req) {
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => reject(req.error);
@@ -60,8 +59,6 @@ function tx(storeName, mode, op) {
         t.onerror = () => reject(t.error);
       }
     } catch (err) {
-      // Stale DB connection — reset and retry once
-      console.warn('[Sideload SW] Transaction failed, resetting DB connection:', err.message);
       _db = null;
       openDB().then((db2) => {
         const t = db2.transaction(storeName, mode);
@@ -79,59 +76,135 @@ function tx(storeName, mode, op) {
   }));
 }
 
-// ── Storage operations ──
+// ── Read projections (in-memory) ──
 
-const StorageOps = {
-  async getWordProgress({ word }) {
-    return tx(WORDS_STORE, 'readonly', (s) => s.get(word.toLowerCase()));
-  },
+let _progress = { total: 0, known: 0, tiers: {} };
+let _knownSet = new Set();
+let _projectionsReady = null; // Promise that resolves when projections are built
 
-  async markKnown({ word, tier }) {
-    const key = word.toLowerCase();
-    const existing = await tx(WORDS_STORE, 'readonly', (s) => s.get(key));
-    const record = existing || { en: key, tier, seen: 0, clicked_known: 0, known: false };
-    const updated = { ...record, clicked_known: record.clicked_known + 1, known: true };
-    await tx(WORDS_STORE, 'readwrite', (s) => s.put(updated));
-  },
-
-  async recordSeen({ word, tier }) {
-    const key = word.toLowerCase();
-    const existing = await tx(WORDS_STORE, 'readonly', (s) => s.get(key));
-    const record = existing || { en: key, tier, seen: 0, clicked_known: 0, known: false };
-    const updated = { ...record, seen: record.seen + 1 };
-    await tx(WORDS_STORE, 'readwrite', (s) => s.put(updated));
-  },
-
-  async getProgress() {
+/**
+ * Rebuild projections from IndexedDB. Called once on service worker wake.
+ */
+function rebuildProjections() {
+  _projectionsReady = (async () => {
     const records = await tx(WORDS_STORE, 'readonly', (s) => s.getAll());
+
     const tiers = {};
     let total = 0;
     let known = 0;
+    const knownSet = new Set();
 
     for (const r of records || []) {
       total++;
-      if (r.known) known++;
+      if (r.known) {
+        known++;
+        knownSet.add(r.en);
+      }
       if (!tiers[r.tier]) tiers[r.tier] = { total: 0, known: 0 };
       tiers[r.tier].total++;
       if (r.known) tiers[r.tier].known++;
     }
 
-    return { total, known, tiers };
+    _progress = { total, known, tiers };
+    _knownSet = knownSet;
+
+    console.log(`[Sideload SW] Projections built: ${known} known / ${total} tracked`);
+  })();
+
+  return _projectionsReady;
+}
+
+/**
+ * Ensure projections are ready before any operation.
+ */
+function ensureProjections() {
+  return _projectionsReady || rebuildProjections();
+}
+
+// ── Commands (write) ──
+
+const Commands = {
+  async markKnown({ word, tier }) {
+    await ensureProjections();
+    const key = word.toLowerCase();
+
+    // Write to IDB
+    const existing = await tx(WORDS_STORE, 'readonly', (s) => s.get(key));
+    const record = existing || { en: key, tier, seen: 0, clicked_known: 0, known: false };
+    const wasKnown = record.known;
+    const updated = { ...record, clicked_known: record.clicked_known + 1, known: true };
+    await tx(WORDS_STORE, 'readwrite', (s) => s.put(updated));
+
+    // Update projections
+    if (!existing) {
+      _progress.total++;
+      if (!_progress.tiers[tier]) _progress.tiers[tier] = { total: 0, known: 0 };
+      _progress.tiers[tier].total++;
+    }
+    if (!wasKnown) {
+      _progress.known++;
+      _progress.tiers[tier].known++;
+      _knownSet.add(key);
+    }
+  },
+
+  async recordSeen({ word, tier }) {
+    await ensureProjections();
+    const key = word.toLowerCase();
+
+    const existing = await tx(WORDS_STORE, 'readonly', (s) => s.get(key));
+    const record = existing || { en: key, tier, seen: 0, clicked_known: 0, known: false };
+    const updated = { ...record, seen: record.seen + 1 };
+    await tx(WORDS_STORE, 'readwrite', (s) => s.put(updated));
+
+    // Update projections if new word
+    if (!existing) {
+      _progress.total++;
+      if (!_progress.tiers[tier]) _progress.tiers[tier] = { total: 0, known: 0 };
+      _progress.tiers[tier].total++;
+    }
+  },
+
+  async setSetting({ key, value }) {
+    await tx(SETTINGS_STORE, 'readwrite', (s) => s.put({ key, value }));
+  },
+
+  async resetProgress() {
+    await tx(WORDS_STORE, 'readwrite', (s) => s.clear());
+    // Reset projections
+    _progress = { total: 0, known: 0, tiers: {} };
+    _knownSet = new Set();
+  },
+};
+
+// ── Queries (read) — projections only, no IDB access ──
+
+const Queries = {
+  async getWordProgress({ word }) {
+    // Single-record lookup still hits IDB (not worth projecting every word)
+    return tx(WORDS_STORE, 'readonly', (s) => s.get(word.toLowerCase()));
+  },
+
+  async getProgress() {
+    await ensureProjections();
+    // Return a copy so callers can't mutate the projection
+    return {
+      total: _progress.total,
+      known: _progress.known,
+      tiers: Object.fromEntries(
+        Object.entries(_progress.tiers).map(([t, v]) => [t, { ...v }])
+      ),
+    };
   },
 
   async getKnownWords() {
-    const records = await tx(WORDS_STORE, 'readonly', (s) => s.getAll());
-    // Return as array — client converts to Set
-    return (records || []).filter((r) => r.known).map((r) => r.en);
+    await ensureProjections();
+    return [..._knownSet];
   },
 
   async getSetting({ key }) {
     const record = await tx(SETTINGS_STORE, 'readonly', (s) => s.get(key));
     return record ? record.value : undefined;
-  },
-
-  async setSetting({ key, value }) {
-    await tx(SETTINGS_STORE, 'readwrite', (s) => s.put({ key, value }));
   },
 
   async getSettings() {
@@ -140,11 +213,15 @@ const StorageOps = {
     for (const r of records || []) settings[r.key] = r.value;
     return settings;
   },
-
-  async resetProgress() {
-    await tx(WORDS_STORE, 'readwrite', (s) => s.clear());
-  },
 };
+
+// ── Unified dispatch ──
+
+const Dispatch = { ...Queries, ...Commands };
+
+// ── Bootstrap projections on wake ──
+
+rebuildProjections();
 
 // ── Message routing ──
 
@@ -153,20 +230,14 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  // Storage requests
   if (message.type === 'STORAGE') {
     const { action, ...params } = message;
-
-    console.log(`[Sideload SW] Storage request: ${action}`, params);
+    const op = Dispatch[action];
 
     (async () => {
       try {
-        const op = StorageOps[action];
-        if (!op) {
-          throw new Error(`Unknown storage action: ${action}`);
-        }
+        if (!op) throw new Error(`Unknown action: ${action}`);
         const data = await op(params);
-        console.log(`[Sideload SW] ${action} result:`, data);
         sendResponse({ data });
       } catch (err) {
         console.error(`[Sideload SW] ${action} error:`, err);
@@ -174,18 +245,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
     })();
 
-    return true; // Keep message channel open for async response
+    return true;
   }
 
-  // Tab management
   if (message.type === 'GET_TAB_ID') {
     sendResponse({ tabId: sender.tab?.id ?? null });
     return false;
   }
 
   if (message.type === 'TOGGLE_TAB') {
-    const { tabId, enabled } = message;
-    chrome.tabs.sendMessage(tabId, { type: 'SET_ENABLED', enabled });
+    chrome.tabs.sendMessage(message.tabId, { type: 'SET_ENABLED', enabled: message.enabled });
     return false;
   }
 
