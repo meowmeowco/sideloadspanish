@@ -39,16 +39,21 @@ User can interact with replaced words. Visible result: hover shows original, cli
    - => green pulse keyframe animation (0.3s), then sideload-word--known class
 4. [x] Handle edge cases: tooltip positioning near viewport edges, dismiss on scroll/click-outside
    - => viewport clamping, scroll dismiss with debounce, tooltip stays alive on hover
-5. [ ] Manual test: hover reveals original, click persists across page reload
+5. [x] Manual test: hover reveals original, click persists across page reload
+   - => confirmed working by user
 
-### Phase 3: Tier System + Density Scaling (status: open)
+### Phase 3: Tier System + Density Scaling (status: active)
 
 Difficulty progression works. Visible result: as words are marked known, new tier unlocks and more words appear.
 
-1. [ ] Expand `data/vocabulary.json` to full ~5000 words across 5 tiers (source a frequency list, curate, format)
-2. [ ] Implement `lib/tiers.js` — tier unlock logic (≥80% known in current tier), density calculator (5%→30% scaling)
-3. [ ] Update `replacer.js` to filter by unlocked tiers and apply density sampling
-4. [ ] Update `storage.js` with aggregate progress queries (words known per tier, overall %)
+1. [x] Expand `data/vocabulary.json` to full ~5000 words across 5 tiers (source a frequency list, curate, format)
+   - => 3663 words: T1=473, T2=729, T3=1021, T4=907, T5=533
+2. [x] Implement `lib/tiers.js` — tier unlock logic (≥80% known in current tier), density calculator (5%→30% scaling)
+   - => sequential unlock (80% threshold), deterministic density sampling via Knuth hash
+3. [x] Update `replacer.js` to filter by unlocked tiers and apply density sampling
+   - => full rewrite: loads raw vocab, computes unlocked tiers from progress, rebuilds vocabMap, applies density
+4. [x] Update `storage.js` with aggregate progress queries (words known per tier, overall %)
+   - => already had getProgress() with per-tier breakdown from Phase 1
 5. [ ] Manual test: mark enough tier-1 words → tier 2 unlocks → new words appear → density increases
 
 ### Phase 4: Popup Dashboard + Settings (status: open)
@@ -95,6 +100,7 @@ Drawn from the spec's verification checklist — all must pass before plan is `c
 - 2026-04-06 13:15 — Plan created. Spec is draft-complete. Ready to start Phase 1.
 - 2026-04-06 13:20 — Phase 1 actions 1-5 complete. Extension scaffolded with manifest, service worker, storage, replacer, styles. Ready for smoke test.
 - 2026-04-06 13:25 — Phase 1 complete (smoke test passed after web_accessible_resources fix). Phase 2 actions 1-4 implemented in single commit. Ready for tooltip smoke test.
+- 2026-04-06 13:30 — Phase 2 confirmed working by user. Phase 3 actions 1-4 complete: 3663-word vocab, tier system, density scaling integrated into replacer. Ready for tier progression test.
 
 ## Adjustments
 
