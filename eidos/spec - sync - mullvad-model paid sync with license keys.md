@@ -175,6 +175,21 @@ sync-worker/
 - **No** user accounts or login — email stored only as hash for key recovery
 - **No** annual pricing or discounts — 5 EUR/month, period
 - **No** free trial of sync — the extension itself is the free tier
-- **No** server-side analytics on user browsing or word data
+- **No** browsing data ever leaves the device — no URLs, no page content, no links, no DOM
+- **No** server-side analytics on user behavior
 - **No** sync of settings — only known-words set. Settings are local preference.
 - **No** multi-key management — one key per payment, user manages their own key
+
+## Privacy Guarantee
+
+The extension **never** transmits:
+- URLs or domains the user visits
+- Page content, text, or DOM structure
+- Browsing history or patterns
+- Timestamps of when/where words were learned
+
+The **only** data that leaves the device during sync:
+- The license key (for authentication)
+- A list of known English word strings (e.g. `["time", "house", "water"]`)
+
+The server has no way to know what pages the user visited, when they browsed, or any context about their learning. It only knows which words from the built-in vocabulary list have been marked as known.
