@@ -25,7 +25,9 @@ A Chrome/Zen browser extension that replaces English words on web pages with the
 
 ### Vocabulary Source (Hybrid)
 
-- Ship a **built-in frequency list** of the top ~5000 English-Spanish word pairs, tagged by tier
+- Ship a **built-in frequency list** of the top ~5000 English-Spanish word pairs, tagged by tier and gender
+- Nouns include a `gender` field: `"m"` (masculine) or `"f"` (feminine); non-nouns have `gender: null`
+- Gender enables correct article pairing: "the house" → "la casa" (not "el casa")
 - For words not in the built-in list, optionally query a **translation API** (e.g. Google Translate, LibreTranslate) at runtime
 - API lookups are cached locally to avoid repeated calls
 - The built-in list is the primary source; API is a fallback, not a requirement

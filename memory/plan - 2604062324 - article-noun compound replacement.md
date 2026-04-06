@@ -22,17 +22,19 @@ status: active
 
 ## Phases
 
-### Phase 1 - Data Model: Add Gender to Nouns - status: open
+### Phase 1 - Data Model: Add Gender to Nouns - status: completed
 
 Vocabulary knows noun genders. Visible result: vocabulary.json has gender field on nouns.
 
-1. [ ] Add `gender` field to vocabulary schema: `"m"` | `"f"` | `null` (null for non-nouns)
-   - update spec with schema change
-2. [ ] Update all nouns in `data/vocabulary.json` with correct Spanish gender
-   - script to bulk-assign: use known Spanish gender rules (ending in -a → f, -o → m) + exceptions list
-   - manual review of ambiguous cases
-3. [ ] Remove standalone "the" entry from vocabulary (it will be handled by compound logic)
-   - also remove "an" if present — same reasoning
+1. [x] Add `gender` field to vocabulary schema: `"m"` | `"f"` | `null` (null for non-nouns)
+   - => updated spec with schema change and article-pairing rationale
+2. [x] Update all nouns in `data/vocabulary.json` with correct Spanish gender
+   - => created scripts/assign-gender.py with Spanish gender rules + exception lists
+   - => 1051 masculine, 859 feminine, 1751 non-nouns (verbs, adjectives, adverbs, function words)
+   - => gender-ambiguous words (estudiante, cantante, juez) left as null — correct, article depends on person
+   - => key fix: exception lists checked BEFORE verb detection (lugar/hogar/mujer end in -ar/-er but are nouns)
+3. [x] Remove standalone "the" entry from vocabulary (it will be handled by compound logic)
+   - => removed "the" and "an" entries (2 removed, 3661 remaining)
 
 ### Phase 2 - Bigram Replacer - status: open
 
@@ -91,3 +93,4 @@ Spec reflects the new behaviour.
 ## Progress Log
 
 - 2026-04-06 23:24 — Plan created. Current vocab has no gender info and replacer is word-by-word only.
+- 2026-04-06 23:50 — Phase 1 complete. 1910 nouns with gender assigned, standalone articles removed. scripts/assign-gender.py created for reproducibility.
