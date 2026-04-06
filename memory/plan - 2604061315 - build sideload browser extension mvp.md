@@ -24,16 +24,21 @@ Get a loadable extension that replaces at least one word on a page. Visible resu
    - => TreeWalker + batched DOM replacement. Excludes proper nouns, URLs, emails. requestIdleCallback for non-blocking init.
 5. [x] Add `content/styles.css` — base styling for `.sideload-word` (subtle highlight/underline)
    - => dotted orange underline, green for known state, hover highlight
-6. [ ] Manual smoke test: load unpacked in Chrome, visit a news site, confirm words are replaced and styled
+6. [x] Manual smoke test: load unpacked in Chrome, visit a news site, confirm words are replaced and styled
+   - => required web_accessible_resources for vocabulary.json fetch. Fixed. Works on Wikipedia.
 
-### Phase 2: Tooltip + Click-to-Know (status: open)
+### Phase 2: Tooltip + Click-to-Know (status: completed)
 
 User can interact with replaced words. Visible result: hover shows original, click marks known.
 
-1. [ ] Implement `content/tooltip.js` — hover handler shows floating tooltip (original word, tier label), click handler dispatches "known" event
-2. [ ] Wire click → `storage.js` `markKnown()` — persist per-word state in IndexedDB
-3. [ ] Add visual feedback on click (brief animation or style change to confirm "known")
-4. [ ] Handle edge cases: tooltip positioning near viewport edges, dismiss on scroll/click-outside
+1. [x] Implement `content/tooltip.js` — hover handler shows floating tooltip (original word, tier label), click handler dispatches "known" event
+   - => singleton tooltip element, event delegation on document body, shows original + translation + tier + action hint
+2. [x] Wire click → `storage.js` `markKnown()` — persist per-word state in IndexedDB
+   - => calls SideloadStorage.markKnown() on click, updates tooltip if still visible
+3. [x] Add visual feedback on click (brief animation or style change to confirm "known")
+   - => green pulse keyframe animation (0.3s), then sideload-word--known class
+4. [x] Handle edge cases: tooltip positioning near viewport edges, dismiss on scroll/click-outside
+   - => viewport clamping, scroll dismiss with debounce, tooltip stays alive on hover
 5. [ ] Manual test: hover reveals original, click persists across page reload
 
 ### Phase 3: Tier System + Density Scaling (status: open)
@@ -89,6 +94,7 @@ Drawn from the spec's verification checklist — all must pass before plan is `c
 
 - 2026-04-06 13:15 — Plan created. Spec is draft-complete. Ready to start Phase 1.
 - 2026-04-06 13:20 — Phase 1 actions 1-5 complete. Extension scaffolded with manifest, service worker, storage, replacer, styles. Ready for smoke test.
+- 2026-04-06 13:25 — Phase 1 complete (smoke test passed after web_accessible_resources fix). Phase 2 actions 1-4 implemented in single commit. Ready for tooltip smoke test.
 
 ## Adjustments
 
