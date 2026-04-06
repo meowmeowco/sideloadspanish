@@ -1,0 +1,19 @@
+/* Sideload Spanish — Replaced Word Styling */
+
+.sideload-word {
+  border-bottom: 2px dotted #e67e22;
+  color: inherit;
+  cursor: help;
+  position: relative;
+  transition: background-color 0.15s ease;
+}
+
+.sideload-word:hover {
+  background-color: rgba(230, 126, 34, 0.12);
+}
+
+/* Known state — word has been clicked/marked as known */
+.sideload-word--known {
+  border-bottom-color: #27ae60;
+  opacity: 0.85;
+}
