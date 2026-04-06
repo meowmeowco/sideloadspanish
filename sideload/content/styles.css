@@ -66,6 +66,12 @@
   margin-top: 2px;
 }
 
+.sideload-tooltip__gender {
+  font-size: 11px;
+  color: #9b59b6;
+  margin-top: 2px;
+}
+
 .sideload-tooltip__tier {
   font-size: 11px;
   color: #95a5a6;

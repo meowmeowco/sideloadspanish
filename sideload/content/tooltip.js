@@ -77,6 +77,15 @@
     transLine.textContent = `→ ${spanish}`;
     tip.appendChild(transLine);
 
+    // Gender (for nouns)
+    const gender = target.dataset.gender;
+    if (gender) {
+      const genderLine = document.createElement('div');
+      genderLine.className = 'sideload-tooltip__gender';
+      genderLine.textContent = gender === 'f' ? '♀ feminine' : '♂ masculine';
+      tip.appendChild(genderLine);
+    }
+
     // Tier badge
     const tierLine = document.createElement('div');
     tierLine.className = 'sideload-tooltip__tier';
@@ -113,8 +122,11 @@
   function handleClick(target) {
     if (target.classList.contains('sideload-word--known')) return;
 
-    const original = target.dataset.original;
     const tier = parseInt(target.dataset.tier, 10);
+
+    // For compounds ("the house"), mark the noun as known, not the article
+    // data-noun is set by replacer for compounds; falls back to data-original for single words
+    const wordToMark = target.dataset.noun || target.dataset.original;
 
     // Visual feedback: brief pulse then known state
     target.classList.add('sideload-word--pulse');
@@ -131,7 +143,7 @@
 
     // Persist to IndexedDB
     if (typeof SideloadStorage !== 'undefined') {
-      SideloadStorage.markKnown(original, tier).catch((err) => {
+      SideloadStorage.markKnown(wordToMark, tier).catch((err) => {
         console.error('[Sideload] Failed to mark known:', err);
       });
     }

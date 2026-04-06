@@ -36,22 +36,24 @@ Vocabulary knows noun genders. Visible result: vocabulary.json has gender field 
 3. [x] Remove standalone "the" entry from vocabulary (it will be handled by compound logic)
    - => removed "the" and "an" entries (2 removed, 3661 remaining)
 
-### Phase 2 - Bigram Replacer - status: open
+### Phase 2 - Bigram Replacer - status: active
 
 Replacer detects "the + noun" and replaces as a unit. Visible result: "the house" → "la casa" on a page.
 
-1. [ ] Implement bigram scanning in `replacer.js` — before single-word pass, scan text nodes for `the/a/an + <known noun>` patterns
-   - tokenise text, look ahead one token when current token is an article
-   - if next token is a known noun: mark both for compound replacement
-   - if next token is not a known noun: skip the article entirely
-2. [ ] Generate correct article from gender: "the" + masculine → "el", "the" + feminine → "la"; "a/an" + masculine → "un", "a/an" + feminine → "una"
-3. [ ] Update replacement span to cover both tokens — single `<span class="sideload-word">` wrapping "la casa"
-   - `data-original` stores "the house" (full original)
-   - `data-es` stores "la casa"
-4. [ ] Handle edge cases:
-   - "The" at sentence start → capitalise "La" / "El"
-   - Multiple articles: "the big house" → only replace "the house" if "big" is not in vocab, or skip compound if intervening word exists
-   - Possessives and demonstratives (my, this, that) → don't trigger compound (only "the", "a", "an")
+1. [x] Implement bigram scanning in `replacer.js` — before single-word pass, scan text nodes for `the/a/an + <known noun>` patterns
+   - => two-pass approach: first collect all word positions, then detect article+noun bigrams
+   - => only compounds when noun has gender AND only whitespace separates article from noun
+   - => standalone articles without following noun are skipped entirely
+2. [x] Generate correct article from gender: "the" + masculine → "el", "the" + feminine → "la"; "a/an" + masculine → "un", "a/an" + feminine → "una"
+   - => getSpanishArticle() helper function
+3. [x] Update replacement span to cover both tokens — single `<span class="sideload-word">` wrapping "la casa"
+   - => data-original="the house", data-es="la casa", data-noun="house" (for progress), data-gender="f"
+4. [x] Handle edge cases:
+   - => "The" at sentence start → capitalises "La" / "El" via isCapitalised check
+   - => "the big house" → no compound (intervening word detected via whitespace-only gap check)
+   - => only "the", "a", "an" trigger compounds (ARTICLES set)
+   - => tooltip shows gender (♀ feminine / ♂ masculine) for nouns
+   - => click on compound marks the noun as known (data-noun), not the article
 5. [ ] Manual test: load extension, find "the house" on a page, confirm it becomes "la casa" as one unit
 
 ### Phase 3 - Tooltip + Progress for Compounds - status: open
@@ -94,3 +96,4 @@ Spec reflects the new behaviour.
 
 - 2026-04-06 23:24 — Plan created. Current vocab has no gender info and replacer is word-by-word only.
 - 2026-04-06 23:50 — Phase 1 complete. 1910 nouns with gender assigned, standalone articles removed. scripts/assign-gender.py created for reproducibility.
+- 2026-04-06 23:58 — Phase 2 actions 1-4 complete. Bigram replacer, article generation, compound spans, edge cases, tooltip gender display, and click-marks-noun-not-article all implemented. Ready for manual test.

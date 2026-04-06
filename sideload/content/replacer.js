@@ -19,7 +19,10 @@
   const URL_RE = /https?:\/\/\S+/gi;
   const EMAIL_RE = /\S+@\S+\.\S+/gi;
 
-  let vocabMap = null;       // Map<lowercase_en, { es, tier }> — filtered by unlocked tiers
+  // English articles that trigger compound replacement
+  const ARTICLES = new Set(['the', 'a', 'an']);
+
+  let vocabMap = null;       // Map<lowercase_en, { es, tier, gender }> — filtered by unlocked tiers
   let fullVocab = [];        // Raw vocabulary array (all tiers)
   let wordsPerTier = {};     // tier → total word count
   let knownWords = new Set(); // Words marked as known in IndexedDB
@@ -66,7 +69,11 @@
 
     vocabMap = new Map();
     for (const entry of filtered) {
-      vocabMap.set(entry.en.toLowerCase(), { es: entry.es, tier: entry.tier });
+      vocabMap.set(entry.en.toLowerCase(), {
+        es: entry.es,
+        tier: entry.tier,
+        gender: entry.gender || null,
+      });
     }
 
     const maxTier = Math.max(...unlockedTiers);
@@ -123,28 +130,104 @@
   }
 
   /**
-   * Find all potential word matches in a text node.
-   * Returns array of { word, wordLower, entry, index, length }.
+   * Get the Spanish article for a given English article + gender.
+   * @param {string} enArticle - 'the', 'a', or 'an'
+   * @param {string} gender - 'm' or 'f'
+   * @returns {string} Spanish article
+   */
+  function getSpanishArticle(enArticle, gender) {
+    if (enArticle === 'the') {
+      return gender === 'f' ? 'la' : 'el';
+    }
+    // 'a' or 'an'
+    return gender === 'f' ? 'una' : 'un';
+  }
+
+  /**
+   * Find all potential word matches in a text node, including article+noun compounds.
+   * Returns array of match objects:
+   *   Single: { word, wordLower, entry, index, length, compound: false }
+   *   Compound: { word, wordLower, entry, index, length, compound: true,
+   *               article, articleEs, fullOriginal, fullEs }
    */
   function findMatches(text) {
     const matches = [];
+    const allWords = [];
     WORD_RE.lastIndex = 0;
     let match;
 
+    // First pass: collect all word positions
     while ((match = WORD_RE.exec(text)) !== null) {
-      const word = match[1];
-      const wordLower = word.toLowerCase();
-      const entry = vocabMap.get(wordLower);
-
-      if (!entry) continue;
-      if (isProbablyProperNoun(word, text, match.index)) continue;
-
-      matches.push({
-        word,
-        wordLower,
-        entry,
+      allWords.push({
+        word: match[1],
+        wordLower: match[1].toLowerCase(),
         index: match.index,
         length: match[0].length,
+      });
+    }
+
+    // Second pass: detect article+noun bigrams and single-word matches
+    const consumed = new Set(); // indices of words already part of a compound
+
+    for (let i = 0; i < allWords.length; i++) {
+      const w = allWords[i];
+
+      // Check if this is an article followed by a known noun with gender
+      if (ARTICLES.has(w.wordLower) && i + 1 < allWords.length) {
+        const next = allWords[i + 1];
+        const entry = vocabMap.get(next.wordLower);
+
+        // Only compound if the noun has a gender AND there's only whitespace between
+        if (entry && entry.gender) {
+          const gap = text.slice(w.index + w.length, next.index);
+          if (/^\s+$/.test(gap)) {
+            const articleEs = getSpanishArticle(w.wordLower, entry.gender);
+            // Preserve capitalisation: if article was "The", capitalise "La"/"El"
+            const isCapitalised = w.word[0] === w.word[0].toUpperCase() && w.word[0] !== w.word[0].toLowerCase();
+            const articleEsFinal = isCapitalised
+              ? articleEs[0].toUpperCase() + articleEs.slice(1)
+              : articleEs;
+
+            const fullOriginal = text.slice(w.index, next.index + next.length);
+            const fullEs = `${articleEsFinal} ${entry.es}`;
+
+            matches.push({
+              word: next.word,
+              wordLower: next.wordLower,
+              entry,
+              index: w.index,
+              length: (next.index + next.length) - w.index,
+              compound: true,
+              article: w.word,
+              articleEs: articleEsFinal,
+              fullOriginal,
+              fullEs,
+            });
+
+            consumed.add(i);
+            consumed.add(i + 1);
+            i++; // skip the noun, already consumed
+            continue;
+          }
+        }
+      }
+
+      // Single word match (skip if already consumed by compound)
+      if (consumed.has(i)) continue;
+
+      const entry = vocabMap.get(w.wordLower);
+      if (!entry) continue;
+      if (isProbablyProperNoun(w.word, text, w.index)) continue;
+      // Skip standalone articles — they're only useful in compounds
+      if (ARTICLES.has(w.wordLower)) continue;
+
+      matches.push({
+        word: w.word,
+        wordLower: w.wordLower,
+        entry,
+        index: w.index,
+        length: w.length,
+        compound: false,
       });
     }
 
@@ -189,10 +272,20 @@
       const span = document.createElement('span');
       const isKnown = knownWords.has(m.wordLower);
       span.className = isKnown ? 'sideload-word sideload-word--known' : 'sideload-word';
-      span.dataset.original = m.word;
       span.dataset.tier = m.entry.tier;
-      span.dataset.es = m.entry.es;
-      span.textContent = m.entry.es;
+
+      if (m.compound) {
+        span.dataset.original = m.fullOriginal;
+        span.dataset.noun = m.wordLower;  // The noun word for progress tracking
+        span.dataset.es = m.fullEs;
+        span.dataset.gender = m.entry.gender;
+        span.textContent = m.fullEs;
+      } else {
+        span.dataset.original = m.word;
+        span.dataset.es = m.entry.es;
+        if (m.entry.gender) span.dataset.gender = m.entry.gender;
+        span.textContent = m.entry.es;
+      }
 
       fragment.appendChild(span);
       lastIndex = m.index + m.length;
