@@ -10,15 +10,20 @@ Chrome/Zen MV3 extension. English → Spanish inline word replacement on web pag
 
 ## Phases
 
-### Phase 1: Skeleton + First Replacement (status: open)
+### Phase 1: Skeleton + First Replacement (status: active)
 
 Get a loadable extension that replaces at least one word on a page. Visible result: load extension in Chrome, visit any page, see a Spanish word.
 
-1. [ ] Scaffold MV3 extension structure: `manifest.json`, service worker stub, content script entry, popup shell
-2. [ ] Create a minimal vocabulary seed — 50 tier-1 words in `data/vocabulary.json` with schema `{ en, es, tier }`
-3. [ ] Implement `lib/storage.js` — IndexedDB wrapper: `init()`, `getProgress()`, `markKnown(word)`, `getSettings()`
-4. [ ] Implement `content/replacer.js` — walk text nodes, match against vocab Map, replace with `<span class="sideload-word">`, skip excluded elements (`code`, `pre`, `script`, `style`, `input`, `textarea`)
-5. [ ] Add `content/styles.css` — base styling for `.sideload-word` (subtle highlight/underline)
+1. [x] Scaffold MV3 extension structure: `manifest.json`, service worker stub, content script entry, popup shell
+   - => manifest.json, service-worker.js (message routing), popup shell, tooltip stub, styles.css
+2. [x] Create a minimal vocabulary seed — 50 tier-1 words in `data/vocabulary.json` with schema `{ en, es, tier }`
+   - => 50 A1-level words (the, is, time, house, etc.)
+3. [x] Implement `lib/storage.js` — IndexedDB wrapper: `init()`, `getProgress()`, `markKnown(word)`, `getSettings()`
+   - => two object stores: words (keyed by en) and settings (key-value). Also has recordSeen(), resetProgress()
+4. [x] Implement `content/replacer.js` — walk text nodes, match against vocab Map, replace with `<span class="sideload-word">`, skip excluded elements (`code`, `pre`, `script`, `style`, `input`, `textarea`)
+   - => TreeWalker + batched DOM replacement. Excludes proper nouns, URLs, emails. requestIdleCallback for non-blocking init.
+5. [x] Add `content/styles.css` — base styling for `.sideload-word` (subtle highlight/underline)
+   - => dotted orange underline, green for known state, hover highlight
 6. [ ] Manual smoke test: load unpacked in Chrome, visit a news site, confirm words are replaced and styled
 
 ### Phase 2: Tooltip + Click-to-Know (status: open)
@@ -83,6 +88,7 @@ Drawn from the spec's verification checklist — all must pass before plan is `c
 ## Progress Log
 
 - 2026-04-06 13:15 — Plan created. Spec is draft-complete. Ready to start Phase 1.
+- 2026-04-06 13:20 — Phase 1 actions 1-5 complete. Extension scaffolded with manifest, service worker, storage, replacer, styles. Ready for smoke test.
 
 ## Adjustments
 
