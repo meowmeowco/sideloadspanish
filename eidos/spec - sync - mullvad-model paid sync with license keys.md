@@ -34,7 +34,18 @@ Privacy-first paid sync at 5 EUR/month. No accounts, no email, no personal data.
 - Pattern: `SL-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}`
 - Example: `SL-7K4M-R2X9-P5NW`
 - Generated server-side, stored hashed in KV
-- One key = one sync identity. No association with email or name.
+- One key = one sync identity
+
+### Key Recovery
+
+Users will lose keys. Recovery must exist without compromising the no-account model.
+
+- At payment time, Lemon Squeezy collects an email (they require it for receipts anyway)
+- Server stores: `email_hash → [key_hash]` mapping in KV (one-way, not reversible from key to email)
+- Recovery flow: user visits recovery page → enters email → receives their key(s) via email
+- The email is **never** used for marketing, login, or identity — only key recovery
+- Extension settings show: "Save your key: `SL-7K4M-R2X9-P5NW`" with a copy button as first line of defense
+- Popup shows a persistent "your key" reminder if sync is active
 
 ### Sync Protocol
 
@@ -145,7 +156,7 @@ sync-worker/
 
 ## Boundaries
 
-- **No** user accounts, email collection, or personal data
+- **No** user accounts or login — email stored only as hash for key recovery
 - **No** annual pricing or discounts — 5 EUR/month, period
 - **No** free trial of sync — the extension itself is the free tier
 - **No** server-side analytics on user browsing or word data
