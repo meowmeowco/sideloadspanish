@@ -15,9 +15,11 @@ function openDB() {
   if (_db) return Promise.resolve(_db);
 
   return new Promise((resolve, reject) => {
+    console.log('[Sideload SW] Opening IndexedDB...');
     const req = indexedDB.open(DB_NAME, DB_VERSION);
 
     req.onupgradeneeded = (e) => {
+      console.log('[Sideload SW] IndexedDB upgrade needed');
       const db = e.target.result;
       if (!db.objectStoreNames.contains(WORDS_STORE)) {
         const store = db.createObjectStore(WORDS_STORE, { keyPath: 'en' });
@@ -29,23 +31,50 @@ function openDB() {
       }
     };
 
-    req.onsuccess = (e) => { _db = e.target.result; resolve(_db); };
-    req.onerror = (e) => reject(new Error(`IndexedDB: ${e.target.error}`));
+    req.onsuccess = (e) => {
+      _db = e.target.result;
+      // Handle connection loss (e.g. after service worker restart)
+      _db.onclose = () => { _db = null; };
+      console.log('[Sideload SW] IndexedDB opened');
+      resolve(_db);
+    };
+    req.onerror = (e) => {
+      console.error('[Sideload SW] IndexedDB open error:', e.target.error);
+      reject(new Error(`IndexedDB: ${e.target.error}`));
+    };
   });
 }
 
 function tx(storeName, mode, op) {
   return openDB().then((db) => new Promise((resolve, reject) => {
-    const t = db.transaction(storeName, mode);
-    const store = t.objectStore(storeName);
-    const req = op(store);
+    try {
+      const t = db.transaction(storeName, mode);
+      const store = t.objectStore(storeName);
+      const req = op(store);
 
-    if (req) {
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
-    } else {
-      t.oncomplete = () => resolve();
-      t.onerror = () => reject(t.error);
+      if (req) {
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      } else {
+        t.oncomplete = () => resolve();
+        t.onerror = () => reject(t.error);
+      }
+    } catch (err) {
+      // Stale DB connection — reset and retry once
+      console.warn('[Sideload SW] Transaction failed, resetting DB connection:', err.message);
+      _db = null;
+      openDB().then((db2) => {
+        const t = db2.transaction(storeName, mode);
+        const store = t.objectStore(storeName);
+        const req = op(store);
+        if (req) {
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        } else {
+          t.oncomplete = () => resolve();
+          t.onerror = () => reject(t.error);
+        }
+      }).catch(reject);
     }
   }));
 }
@@ -127,25 +156,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Storage requests
   if (message.type === 'STORAGE') {
     const { action, ...params } = message;
-    const op = StorageOps[action];
 
     console.log(`[Sideload SW] Storage request: ${action}`, params);
 
-    if (!op) {
-      console.error(`[Sideload SW] Unknown action: ${action}`);
-      sendResponse({ error: `Unknown storage action: ${action}` });
-      return false;
-    }
-
-    op(params)
-      .then((data) => {
+    (async () => {
+      try {
+        const op = StorageOps[action];
+        if (!op) {
+          throw new Error(`Unknown storage action: ${action}`);
+        }
+        const data = await op(params);
         console.log(`[Sideload SW] ${action} result:`, data);
         sendResponse({ data });
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error(`[Sideload SW] ${action} error:`, err);
         sendResponse({ error: err.message });
-      });
+      }
+    })();
 
     return true; // Keep message channel open for async response
   }
