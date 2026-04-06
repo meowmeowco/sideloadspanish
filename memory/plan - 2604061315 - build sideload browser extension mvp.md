@@ -56,15 +56,20 @@ Difficulty progression works. Visible result: as words are marked known, new tie
    - => already had getProgress() with per-tier breakdown from Phase 1
 5. [ ] Manual test: mark enough tier-1 words → tier 2 unlocks → new words appear → density increases
 
-### Phase 4: Popup Dashboard + Settings (status: open)
+### Phase 4: Popup Dashboard + Settings (status: active)
 
 User has a control panel. Visible result: click extension icon, see progress and settings.
 
-1. [ ] Build `popup/popup.html` + `popup.css` — layout for progress display and settings controls
-2. [ ] Implement `popup/popup.js` — read progress from IndexedDB, render current tier, % completion, words known, tier bar chart
-3. [ ] Add settings UI: global toggle, density slider, domain blacklist input, reset progress button
-4. [ ] Wire settings to `storage.js` and `background/service-worker.js` — broadcast setting changes to active tabs
-5. [ ] Implement per-tab toggle via service worker messaging
+1. [x] Build `popup/popup.html` + `popup.css` — layout for progress display and settings controls
+   - => full layout: header w/ toggle, stats, tier bars, settings section with slider/blacklist/reset
+2. [x] Implement `popup/popup.js` — read progress from IndexedDB, render current tier, % completion, words known, tier bar chart
+   - => loads vocab for tier totals, renders 5 color-coded tier bars with known/total
+3. [x] Add settings UI: global toggle, density slider, domain blacklist input, reset progress button
+   - => density slider 0-50% (0=auto), textarea blacklist, confirm-gated reset
+4. [x] Wire settings to `storage.js` and `background/service-worker.js` — broadcast setting changes to active tabs
+   - => SETTINGS_CHANGED message via chrome.runtime, added tabs permission
+5. [x] Implement per-tab toggle via service worker messaging
+   - => global toggle sends SET_ENABLED to all tabs via chrome.tabs.query
 6. [ ] Manual test: popup reflects accurate progress, settings changes take immediate effect
 
 ### Phase 5: Dynamic Content + Polish (status: open)
@@ -101,6 +106,7 @@ Drawn from the spec's verification checklist — all must pass before plan is `c
 - 2026-04-06 13:20 — Phase 1 actions 1-5 complete. Extension scaffolded with manifest, service worker, storage, replacer, styles. Ready for smoke test.
 - 2026-04-06 13:25 — Phase 1 complete (smoke test passed after web_accessible_resources fix). Phase 2 actions 1-4 implemented in single commit. Ready for tooltip smoke test.
 - 2026-04-06 13:30 — Phase 2 confirmed working by user. Phase 3 actions 1-4 complete: 3663-word vocab, tier system, density scaling integrated into replacer. Ready for tier progression test.
+- 2026-04-06 13:35 — Fixed known-word persistence bug. Phase 3 confirmed. Phase 4 actions 1-5 complete: full popup dashboard with progress, tier bars, settings. Ready for popup smoke test.
 
 ## Adjustments
 
