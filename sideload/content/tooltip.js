@@ -123,13 +123,16 @@
       target.classList.add('sideload-word--known');
     }, 300);
 
+    // Update tooltip immediately
+    if (tooltipEl && tooltipEl.classList.contains('sideload-tooltip--visible')) {
+      const actionLine = tooltipEl.querySelector('.sideload-tooltip__action');
+      if (actionLine) actionLine.textContent = '\u2713 Known';
+    }
+
     // Persist to IndexedDB
     if (typeof SideloadStorage !== 'undefined') {
-      SideloadStorage.markKnown(original, tier).then(() => {
-        // Update tooltip if still visible
-        if (tooltipEl && tooltipEl.classList.contains('sideload-tooltip--visible')) {
-          showTooltip(target);
-        }
+      SideloadStorage.markKnown(original, tier).catch((err) => {
+        console.error('[Sideload] Failed to mark known:', err);
       });
     }
   }
