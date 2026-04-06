@@ -1,81 +1,53 @@
-// Sideload Spanish — IndexedDB Storage
-// Manages per-word progress and extension settings.
+// Sideload Spanish — chrome.storage.local Storage
+// Uses chrome.storage.local for cross-context data sharing
+// (content scripts, popup, and service worker all see the same data).
 
 const SideloadStorage = (() => {
-  const DB_NAME = 'sideload-spanish';
-  const DB_VERSION = 1;
-  const WORDS_STORE = 'words';
-  const SETTINGS_STORE = 'settings';
-
-  let _db = null;
+  const WORDS_KEY = 'sideload_words';     // { [en]: { en, tier, seen, clicked_known, known } }
+  const SETTINGS_KEY = 'sideload_settings'; // { [key]: value }
 
   /**
-   * Open (or create) the IndexedDB database.
-   * @returns {Promise<IDBDatabase>}
-   */
-  function open() {
-    if (_db) return Promise.resolve(_db);
-
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-      request.onupgradeneeded = (event) => {
-        const db = event.target.result;
-
-        if (!db.objectStoreNames.contains(WORDS_STORE)) {
-          const wordsStore = db.createObjectStore(WORDS_STORE, { keyPath: 'en' });
-          wordsStore.createIndex('tier', 'tier', { unique: false });
-          wordsStore.createIndex('known', 'known', { unique: false });
-        }
-
-        if (!db.objectStoreNames.contains(SETTINGS_STORE)) {
-          db.createObjectStore(SETTINGS_STORE, { keyPath: 'key' });
-        }
-      };
-
-      request.onsuccess = (event) => {
-        _db = event.target.result;
-        resolve(_db);
-      };
-
-      request.onerror = (event) => {
-        reject(new Error(`IndexedDB error: ${event.target.error}`));
-      };
-    });
-  }
-
-  /**
-   * Run a transaction and return a promise.
-   * @param {string} storeName
-   * @param {'readonly'|'readwrite'} mode
-   * @param {(store: IDBObjectStore) => IDBRequest} operation
+   * Read a top-level key from chrome.storage.local.
+   * @param {string} key
+   * @param {any} defaultValue
    * @returns {Promise<any>}
    */
-  function tx(storeName, mode, operation) {
-    return open().then((db) => {
-      return new Promise((resolve, reject) => {
-        const transaction = db.transaction(storeName, mode);
-        const store = transaction.objectStore(storeName);
-        const request = operation(store);
-
-        if (request) {
-          request.onsuccess = () => resolve(request.result);
-          request.onerror = () => reject(request.error);
-        } else {
-          transaction.oncomplete = () => resolve();
-          transaction.onerror = () => reject(transaction.error);
-        }
+  function read(key, defaultValue) {
+    return new Promise((resolve) => {
+      chrome.storage.local.get(key, (result) => {
+        resolve(result[key] !== undefined ? result[key] : defaultValue);
       });
     });
   }
 
   /**
+   * Write a top-level key to chrome.storage.local.
+   * @param {string} key
+   * @param {any} value
+   * @returns {Promise<void>}
+   */
+  function write(key, value) {
+    return new Promise((resolve) => {
+      chrome.storage.local.set({ [key]: value }, resolve);
+    });
+  }
+
+  /**
+   * Open / init — no-op for chrome.storage, kept for API compat.
+   * @returns {Promise<void>}
+   */
+  function open() {
+    return Promise.resolve();
+  }
+
+  /**
    * Get progress for a single word.
    * @param {string} word - English word
-   * @returns {Promise<{en: string, tier: number, seen: number, clicked_known: number, known: boolean}|undefined>}
+   * @returns {Promise<Object|undefined>}
    */
-  function getWordProgress(word) {
-    return tx(WORDS_STORE, 'readonly', (store) => store.get(word.toLowerCase()));
+  async function getWordProgress(word) {
+    const words = await read(WORDS_KEY, {});
+    return words[word.toLowerCase()];
   }
 
   /**
@@ -84,17 +56,18 @@ const SideloadStorage = (() => {
    * @param {number} tier - Word tier
    * @returns {Promise<void>}
    */
-  function markKnown(word, tier) {
+  async function markKnown(word, tier) {
     const key = word.toLowerCase();
-    return getWordProgress(key).then((existing) => {
-      const record = existing || { en: key, tier, seen: 0, clicked_known: 0, known: false };
-      const updated = {
-        ...record,
-        clicked_known: record.clicked_known + 1,
-        known: true,
-      };
-      return tx(WORDS_STORE, 'readwrite', (store) => store.put(updated));
-    });
+    const words = await read(WORDS_KEY, {});
+    const existing = words[key] || { en: key, tier, seen: 0, clicked_known: 0, known: false };
+
+    words[key] = {
+      ...existing,
+      clicked_known: existing.clicked_known + 1,
+      known: true,
+    };
+
+    await write(WORDS_KEY, words);
   }
 
   /**
@@ -103,55 +76,54 @@ const SideloadStorage = (() => {
    * @param {number} tier - Word tier
    * @returns {Promise<void>}
    */
-  function recordSeen(word, tier) {
+  async function recordSeen(word, tier) {
     const key = word.toLowerCase();
-    return getWordProgress(key).then((existing) => {
-      const record = existing || { en: key, tier, seen: 0, clicked_known: 0, known: false };
-      const updated = {
-        ...record,
-        seen: record.seen + 1,
-      };
-      return tx(WORDS_STORE, 'readwrite', (store) => store.put(updated));
-    });
+    const words = await read(WORDS_KEY, {});
+    const existing = words[key] || { en: key, tier, seen: 0, clicked_known: 0, known: false };
+
+    words[key] = {
+      ...existing,
+      seen: existing.seen + 1,
+    };
+
+    await write(WORDS_KEY, words);
   }
 
   /**
    * Get aggregate progress: total words, known words, per-tier breakdown.
    * @returns {Promise<{total: number, known: number, tiers: Object}>}
    */
-  function getProgress() {
-    return tx(WORDS_STORE, 'readonly', (store) => store.getAll()).then((records) => {
-      const tiers = {};
-      let total = 0;
-      let known = 0;
+  async function getProgress() {
+    const words = await read(WORDS_KEY, {});
+    const tiers = {};
+    let total = 0;
+    let known = 0;
 
-      for (const record of records || []) {
-        total++;
-        if (record.known) known++;
+    for (const record of Object.values(words)) {
+      total++;
+      if (record.known) known++;
 
-        if (!tiers[record.tier]) {
-          tiers[record.tier] = { total: 0, known: 0 };
-        }
-        tiers[record.tier].total++;
-        if (record.known) tiers[record.tier].known++;
+      if (!tiers[record.tier]) {
+        tiers[record.tier] = { total: 0, known: 0 };
       }
+      tiers[record.tier].total++;
+      if (record.known) tiers[record.tier].known++;
+    }
 
-      return { total, known, tiers };
-    });
+    return { total, known, tiers };
   }
 
   /**
    * Get set of all known word keys.
    * @returns {Promise<Set<string>>}
    */
-  function getKnownWords() {
-    return tx(WORDS_STORE, 'readonly', (store) => store.getAll()).then((records) => {
-      const known = new Set();
-      for (const record of records || []) {
-        if (record.known) known.add(record.en);
-      }
-      return known;
-    });
+  async function getKnownWords() {
+    const words = await read(WORDS_KEY, {});
+    const known = new Set();
+    for (const record of Object.values(words)) {
+      if (record.known) known.add(record.en);
+    }
+    return known;
   }
 
   /**
@@ -160,10 +132,9 @@ const SideloadStorage = (() => {
    * @param {any} defaultValue
    * @returns {Promise<any>}
    */
-  function getSetting(key, defaultValue) {
-    return tx(SETTINGS_STORE, 'readonly', (store) => store.get(key)).then(
-      (record) => (record ? record.value : defaultValue)
-    );
+  async function getSetting(key, defaultValue) {
+    const settings = await read(SETTINGS_KEY, {});
+    return settings[key] !== undefined ? settings[key] : defaultValue;
   }
 
   /**
@@ -172,30 +143,26 @@ const SideloadStorage = (() => {
    * @param {any} value
    * @returns {Promise<void>}
    */
-  function setSetting(key, value) {
-    return tx(SETTINGS_STORE, 'readwrite', (store) => store.put({ key, value }));
+  async function setSetting(key, value) {
+    const settings = await read(SETTINGS_KEY, {});
+    settings[key] = value;
+    await write(SETTINGS_KEY, settings);
   }
 
   /**
    * Get all settings as a flat object.
    * @returns {Promise<Object>}
    */
-  function getSettings() {
-    return tx(SETTINGS_STORE, 'readonly', (store) => store.getAll()).then((records) => {
-      const settings = {};
-      for (const record of records || []) {
-        settings[record.key] = record.value;
-      }
-      return settings;
-    });
+  async function getSettings() {
+    return read(SETTINGS_KEY, {});
   }
 
   /**
-   * Reset all progress (clear words store).
+   * Reset all progress (clear words data).
    * @returns {Promise<void>}
    */
-  function resetProgress() {
-    return tx(WORDS_STORE, 'readwrite', (store) => store.clear());
+  async function resetProgress() {
+    await write(WORDS_KEY, {});
   }
 
   return {
