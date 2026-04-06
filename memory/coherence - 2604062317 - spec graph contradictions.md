@@ -25,6 +25,8 @@ Additionally: the sideload spec defines per-word state as `{ seen: number, click
 
 **Decision needed:** What exactly is the sync payload — flat word list, or per-word record with counts?
 
+**Resolved:** Aligned on per-word records. E2E encryption makes the payload opaque to the server regardless of structure, so there's no privacy cost. Updated: payload format (v2 with per-word records), conflict resolution (union + max on counts including `seen`), privacy guarantee (server sees opaque blob, not word list).
+
 ### C2 — Sync spec: server-side merge vs E2E encryption
 
 The backend architecture (line 174) lists `sync.js` as containing "G-Set merge logic" in the server code. But E2E encryption (line 103-125) explicitly states:

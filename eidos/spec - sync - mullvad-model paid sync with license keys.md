@@ -96,8 +96,16 @@ encryption_key = PBKDF2(
 
 The plaintext before encryption:
 ```json
-{ "known_words": ["time", "house", "water"], "version": 1 }
+{
+  "words": [
+    { "en": "time", "known": true, "clicked_known": 3, "seen": 12, "tier": 1 },
+    { "en": "house", "known": true, "clicked_known": 1, "seen": 5, "tier": 1 }
+  ],
+  "version": 2
+}
 ```
+
+Per-word records enable cross-device struggling word detection (words seen many times without marking known). No privacy cost — E2E encryption makes the entire payload opaque to the server regardless of its internal structure.
 
 ### Sync Protocol (E2E)
 
@@ -155,11 +163,11 @@ Mitigations:
 
 ### Conflict Resolution
 
-None needed. Known-words is a G-Set:
-- Word marked known on device A + not on device B → after sync, known on both
-- Word marked known on both devices → union is idempotent
-- `clicked_known` count: take max(device_a, device_b) per word
-- Progress projections are recomputed from merged data
+Known-words is a G-Set (grow-only). Per-word records merge deterministically:
+- Word exists on device A but not B → add to merged set
+- Word exists on both → merge fields: `known = a OR b`, `clicked_known = max(a, b)`, `seen = max(a, b)`, `tier = min(a, b)` (tier is a property of the vocabulary, not the user — min catches vocabulary updates)
+- No word is ever removed — grow-only
+- Progress projections are recomputed from merged data on each device
 
 ## Architecture
 
@@ -241,7 +249,7 @@ The extension **never** transmits:
 - Timestamps of when/where words were learned
 
 The **only** data that leaves the device during sync:
-- The license key (for authentication)
-- A list of known English word strings (e.g. `["time", "house", "water"]`)
+- The license key (for authentication — sent in the clear)
+- An encrypted blob containing per-word learning records (opaque to the server)
 
-The server has no way to know what pages the user visited, when they browsed, or any context about their learning. It only knows which words from the built-in vocabulary list have been marked as known.
+The server receives `{ iv, ciphertext }` — it cannot decrypt, parse, or inspect the contents. It has no way to know what words the user has learned, how many times they've seen them, what pages they visited, or any context about their learning. The server is a dumb blob store.
