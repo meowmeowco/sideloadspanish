@@ -129,14 +129,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const { action, ...params } = message;
     const op = StorageOps[action];
 
+    console.log(`[Sideload SW] Storage request: ${action}`, params);
+
     if (!op) {
+      console.error(`[Sideload SW] Unknown action: ${action}`);
       sendResponse({ error: `Unknown storage action: ${action}` });
       return false;
     }
 
     op(params)
-      .then((data) => sendResponse({ data }))
-      .catch((err) => sendResponse({ error: err.message }));
+      .then((data) => {
+        console.log(`[Sideload SW] ${action} result:`, data);
+        sendResponse({ data });
+      })
+      .catch((err) => {
+        console.error(`[Sideload SW] ${action} error:`, err);
+        sendResponse({ error: err.message });
+      });
 
     return true; // Keep message channel open for async response
   }

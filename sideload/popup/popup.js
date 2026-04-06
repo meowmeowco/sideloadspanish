@@ -36,7 +36,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ── Render progress ──
   async function renderProgress() {
-    const progress = await SideloadStorage.getProgress();
+    let progress;
+    try {
+      progress = await SideloadStorage.getProgress();
+      console.log('[Sideload Popup] Progress from service worker:', JSON.stringify(progress));
+    } catch (err) {
+      console.error('[Sideload Popup] Failed to get progress:', err);
+      progress = { total: 0, known: 0, tiers: {} };
+    }
     const unlockedTiers = SideloadTiers.getUnlockedTiers(progress, vocabTierTotals);
     const maxTier = Math.max(...unlockedTiers);
 

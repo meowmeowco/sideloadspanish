@@ -12,15 +12,19 @@ const SideloadStorage = (() => {
    */
   function request(action, params = {}) {
     return new Promise((resolve, reject) => {
+      console.log(`[Sideload Storage] → ${action}`, params);
       chrome.runtime.sendMessage({ type: 'STORAGE', action, ...params }, (response) => {
         if (chrome.runtime.lastError) {
+          console.error(`[Sideload Storage] ← ${action} ERROR:`, chrome.runtime.lastError.message);
           reject(new Error(chrome.runtime.lastError.message));
           return;
         }
         if (response && response.error) {
+          console.error(`[Sideload Storage] ← ${action} ERROR:`, response.error);
           reject(new Error(response.error));
           return;
         }
+        console.log(`[Sideload Storage] ← ${action} OK`);
         resolve(response?.data);
       });
     });
