@@ -5,7 +5,8 @@
   "description": "Learn Spanish while browsing — words on pages are progressively replaced with Spanish translations based on your level.",
   "permissions": [
     "storage",
-    "activeTab"
+    "activeTab",
+    "tabs"
   ],
   "background": {
     "service_worker": "background/service-worker.js"
