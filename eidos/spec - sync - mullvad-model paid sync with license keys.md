@@ -67,36 +67,84 @@ Keys can be leaked or compromised. Users must be able to rotate without losing d
 
 The known-words set is a grow-only CRDT (G-Set). Merge = union. No conflicts possible.
 
-**Sync request (client → server):**
+All sync data is end-to-end encrypted. The server is a dumb blob store — it cannot read, merge, or inspect the data.
+
+### End-to-End Encryption
+
+**Key derivation:**
 ```
-POST /sync
-Headers: X-License-Key: SL-7K4M-R2X9-P5NW
-Body: {
-  known_words: ["time", "house", "water", ...],
-  last_sync: "2026-04-06T19:00:00Z"
-}
+encryption_key = PBKDF2(
+  password: license_key + user_pin,
+  salt: account_id,
+  iterations: 100000,
+  hash: SHA-256,
+  keyLength: 256 bits
+)
 ```
 
-**Server logic:**
-1. Validate key → check expiry
-2. Read server-side known set from KV
-3. Merge: `server_set = union(server_set, client_set)`
-4. Write merged set back to KV
-5. Return merged set to client
+- The 4-digit PIN is set by the user when they first activate sync
+- PIN is stored only locally, never sent to the server
+- Even a leaked license key alone cannot decrypt the data
+- All crypto uses Web Crypto API (built into browsers, no dependencies)
 
-**Sync response (server → client):**
+**Encryption:** AES-256-GCM with a random 12-byte IV per sync payload.
+
+**Payload format:**
 ```
-{
-  known_words: ["time", "house", "water", "money", ...],
-  sync_timestamp: "2026-04-06T19:00:01Z",
-  expires_at: "2026-05-06T00:00:00Z"
-}
+{ iv: base64, ciphertext: base64 }
 ```
 
-**Client logic:**
-1. Merge returned set into local IndexedDB (add any new words from server)
-2. Update CQRS projections
-3. Store `sync_timestamp` and `expires_at` locally
+The plaintext before encryption:
+```json
+{ "known_words": ["time", "house", "water"], "version": 1 }
+```
+
+### Sync Protocol (E2E)
+
+Since the server cannot decrypt, all merging happens client-side.
+
+**Sync flow (pull → merge → push):**
+```
+1. Client: GET /sync   (authenticated with license key)
+2. Server: returns { iv, ciphertext, updated_at, expires_at }
+3. Client: decrypt(ciphertext, encryption_key) → server_words
+4. Client: merged = union(local_words, server_words)
+5. Client: new_ciphertext = encrypt(merged, encryption_key)
+6. Client: PUT /sync    body: { iv, ciphertext }
+7. Server: stores blob, returns { updated_at }
+```
+
+**Server endpoints:**
+```
+GET  /sync   → return stored encrypted blob
+PUT  /sync   → overwrite stored encrypted blob
+POST /validate → check key validity
+POST /webhook  → Lemon Squeezy payment events
+```
+
+**Server logic is trivial:** validate key, read blob, write blob. No parsing, no merging, no knowledge of contents.
+
+**Conflict handling:** if two devices sync simultaneously, last-write-wins on the encrypted blob. Since the data is a G-Set (grow-only) and each client pulls before pushing, the merge window is small and no words are ever deleted, so eventual consistency is guaranteed after the next sync cycle.
+
+### Key Rotation with E2E
+
+When a key is rotated, the encryption key changes (new license key in the KDF input). The rotation handoff:
+
+1. Client authenticates with old key
+2. Client pulls blob → decrypts with old encryption key
+3. Server rotates: new key → same account ID, old key invalidated
+4. Client re-encrypts data with new encryption key (derived from new key + same PIN)
+5. Client pushes re-encrypted blob with new key
+6. Single atomic operation from the user's perspective
+
+### PIN Recovery
+
+If the user forgets their PIN, the encrypted data is unrecoverable by design. This is the trade-off of E2E encryption.
+
+Mitigations:
+- On PIN setup, show: "Write this down. We cannot recover your data without it."
+- Local data is never encrypted — only the sync copy. Losing the PIN means losing sync, not losing local progress.
+- User can set a new PIN, which starts a fresh sync (uploading current local state with new encryption)
 
 ### Sync Triggers
 
@@ -128,7 +176,7 @@ sync-worker/
 
 **KV namespaces:**
 - `LICENSES` — key → `{ created, expires_at, active }` (hashed key as KV key)
-- `SYNC_DATA` — key_hash → `{ known_words: [...], updated_at }` 
+- `SYNC_DATA` — account_id → `{ iv, ciphertext, updated_at }` (opaque encrypted blob)
 
 **Endpoints:**
 | Method | Path | Purpose |
@@ -167,6 +215,10 @@ sync-worker/
 - [ ] Invalid/fake key is rejected with clear error
 - [ ] Webhook correctly handles subscription renewal and cancellation
 - [ ] No personal data stored server-side (no email, no name)
+- [ ] Server-side blob is encrypted and unreadable without license key + PIN
+- [ ] Key rotation re-encrypts data without loss
+- [ ] Wrong PIN fails decryption cleanly with user-facing error
+- [ ] Forgotten PIN: local data intact, user can reset sync with new PIN
 - [ ] Sync batches writes (not per-click)
 - [ ] Grace period: 7 days after expiry before server purge
 
