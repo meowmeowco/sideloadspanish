@@ -1,5 +1,6 @@
 // Sideload Spanish — Content Script: Word Replacer
 // Walks DOM text nodes, replaces English words with Spanish translations.
+// Integrates with SideloadTiers for difficulty progression and density scaling.
 
 (() => {
   // Elements whose text content should never be touched
@@ -18,28 +19,56 @@
   const URL_RE = /https?:\/\/\S+/gi;
   const EMAIL_RE = /\S+@\S+\.\S+/gi;
 
-  let vocabMap = null; // Map<lowercase_en, { es, tier }>
+  let vocabMap = null;       // Map<lowercase_en, { es, tier }> — filtered by unlocked tiers
+  let fullVocab = [];        // Raw vocabulary array (all tiers)
+  let wordsPerTier = {};     // tier → total word count
+  let currentDensity = 0.05; // Default tier-1 density
   let enabled = true;
 
   /**
-   * Load vocabulary JSON and build lookup map.
+   * Load vocabulary JSON and initialize tier-aware state.
    */
   async function loadVocabulary() {
     try {
       const url = chrome.runtime.getURL('data/vocabulary.json');
       const response = await fetch(url);
-      const words = await response.json();
+      fullVocab = await response.json();
 
-      vocabMap = new Map();
-      for (const entry of words) {
-        vocabMap.set(entry.en.toLowerCase(), { es: entry.es, tier: entry.tier });
-      }
-
-      console.log(`[Sideload] Vocabulary loaded: ${vocabMap.size} words`);
+      wordsPerTier = SideloadTiers.countWordsPerTier(fullVocab);
+      console.log(`[Sideload] Vocabulary loaded: ${fullVocab.length} words across ${Object.keys(wordsPerTier).length} tiers`);
     } catch (err) {
       console.error('[Sideload] Failed to load vocabulary:', err);
-      vocabMap = new Map();
+      fullVocab = [];
+      wordsPerTier = {};
     }
+  }
+
+  /**
+   * Rebuild the vocabMap based on current progress and unlocked tiers.
+   */
+  async function rebuildVocabMap() {
+    let progress = { total: 0, known: 0, tiers: {} };
+    let densityOverride = null;
+
+    try {
+      progress = await SideloadStorage.getProgress();
+      densityOverride = await SideloadStorage.getSetting('densityOverride', null);
+    } catch (err) {
+      // Storage not ready — use defaults
+    }
+
+    const unlockedTiers = SideloadTiers.getUnlockedTiers(progress, wordsPerTier);
+    currentDensity = SideloadTiers.getDensity(unlockedTiers, densityOverride);
+
+    const filtered = SideloadTiers.filterByUnlockedTiers(fullVocab, unlockedTiers);
+
+    vocabMap = new Map();
+    for (const entry of filtered) {
+      vocabMap.set(entry.en.toLowerCase(), { es: entry.es, tier: entry.tier });
+    }
+
+    const maxTier = Math.max(...unlockedTiers);
+    console.log(`[Sideload] Active: ${vocabMap.size} words, tier ${maxTier} unlocked, density ${(currentDensity * 100).toFixed(0)}%`);
   }
 
   /**
@@ -58,16 +87,13 @@
 
   /**
    * Check if a word looks like a proper noun based on its position in text.
-   * A word at the start of text that's capitalized is NOT treated as a proper noun.
    */
   function isProbablyProperNoun(word, fullText, matchIndex) {
     if (!LOOKS_LIKE_PROPER_NOUN.test(word)) return false;
 
-    // Check if this is at the very start of the text node (after optional whitespace)
     const before = fullText.slice(0, matchIndex).trimEnd();
     if (before.length === 0) return false;
 
-    // Check if preceded by sentence-ending punctuation
     const lastChar = before[before.length - 1];
     if ('.!?'.includes(lastChar)) return false;
 
@@ -95,22 +121,11 @@
   }
 
   /**
-   * Build a replacement fragment for a single text node.
-   * Returns null if no replacements were made.
+   * Find all potential word matches in a text node.
+   * Returns array of { word, wordLower, entry, index, length }.
    */
-  function buildReplacementFragment(textNode) {
-    const text = textNode.textContent;
-
-    // Skip text that looks like URLs or emails
-    if (URL_RE.test(text) || EMAIL_RE.test(text)) return null;
-    // Reset regex state
-    URL_RE.lastIndex = 0;
-    EMAIL_RE.lastIndex = 0;
-
-    const fragment = document.createDocumentFragment();
-    let lastIndex = 0;
-    let hasReplacement = false;
-
+  function findMatches(text) {
+    const matches = [];
     WORD_RE.lastIndex = 0;
     let match;
 
@@ -122,26 +137,63 @@
       if (!entry) continue;
       if (isProbablyProperNoun(word, text, match.index)) continue;
 
-      hasReplacement = true;
+      matches.push({
+        word,
+        wordLower,
+        entry,
+        index: match.index,
+        length: match[0].length,
+      });
+    }
 
+    return matches;
+  }
+
+  /**
+   * Build a replacement fragment for a single text node.
+   * Applies density sampling to limit how many words get replaced.
+   * Returns null if no replacements were made.
+   */
+  function buildReplacementFragment(textNode) {
+    const text = textNode.textContent;
+
+    // Skip text that looks like URLs or emails
+    if (URL_RE.test(text) || EMAIL_RE.test(text)) return null;
+    URL_RE.lastIndex = 0;
+    EMAIL_RE.lastIndex = 0;
+
+    // Find all potential matches
+    const allMatches = findMatches(text);
+    if (allMatches.length === 0) return null;
+
+    // Apply density sampling
+    const selectedMatches = SideloadTiers.applyDensity(allMatches, currentDensity);
+    if (selectedMatches.length === 0) return null;
+
+    // Sort by index so we process left-to-right
+    selectedMatches.sort((a, b) => a.index - b.index);
+
+    // Build fragment
+    const fragment = document.createDocumentFragment();
+    let lastIndex = 0;
+
+    for (const m of selectedMatches) {
       // Add text before this match
-      if (match.index > lastIndex) {
-        fragment.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+      if (m.index > lastIndex) {
+        fragment.appendChild(document.createTextNode(text.slice(lastIndex, m.index)));
       }
 
       // Create replacement span
       const span = document.createElement('span');
       span.className = 'sideload-word';
-      span.dataset.original = word;
-      span.dataset.tier = entry.tier;
-      span.dataset.es = entry.es;
-      span.textContent = entry.es;
+      span.dataset.original = m.word;
+      span.dataset.tier = m.entry.tier;
+      span.dataset.es = m.entry.es;
+      span.textContent = m.entry.es;
 
       fragment.appendChild(span);
-      lastIndex = match.index + match[0].length;
+      lastIndex = m.index + m.length;
     }
-
-    if (!hasReplacement) return null;
 
     // Add remaining text
     if (lastIndex < text.length) {
@@ -179,12 +231,12 @@
   }
 
   /**
-   * Initialize: load vocab, run replacement, set up observer.
+   * Initialize: load vocab, compute tiers, run replacement.
    */
   async function init() {
     await loadVocabulary();
+    await rebuildVocabMap();
 
-    // Use requestIdleCallback if available, otherwise setTimeout
     if ('requestIdleCallback' in window) {
       requestIdleCallback(() => replaceWords());
     } else {
@@ -192,12 +244,18 @@
     }
   }
 
-  // Listen for enable/disable messages from background
+  // Listen for messages from background
   chrome.runtime.onMessage.addListener((message) => {
     if (message.type === 'SET_ENABLED') {
       enabled = message.enabled;
-      // If re-enabled, re-run replacement
       if (enabled) replaceWords();
+    }
+
+    if (message.type === 'SETTINGS_CHANGED') {
+      // Rebuild vocab map with new settings, then re-run
+      rebuildVocabMap().then(() => {
+        // Note: already-replaced words stay; new density applies to future replacements
+      });
     }
   });
 

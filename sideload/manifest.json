@@ -13,7 +13,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["lib/storage.js", "content/replacer.js", "content/tooltip.js"],
+      "js": ["lib/storage.js", "lib/tiers.js", "content/replacer.js", "content/tooltip.js"],
       "css": ["content/styles.css"],
       "run_at": "document_idle"
     }
