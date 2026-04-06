@@ -141,6 +141,20 @@ const SideloadStorage = (() => {
   }
 
   /**
+   * Get set of all known word keys.
+   * @returns {Promise<Set<string>>}
+   */
+  function getKnownWords() {
+    return tx(WORDS_STORE, 'readonly', (store) => store.getAll()).then((records) => {
+      const known = new Set();
+      for (const record of records || []) {
+        if (record.known) known.add(record.en);
+      }
+      return known;
+    });
+  }
+
+  /**
    * Get a setting value.
    * @param {string} key
    * @param {any} defaultValue
@@ -190,6 +204,7 @@ const SideloadStorage = (() => {
     markKnown,
     recordSeen,
     getProgress,
+    getKnownWords,
     getSetting,
     setSetting,
     getSettings,

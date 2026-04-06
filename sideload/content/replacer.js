@@ -22,6 +22,7 @@
   let vocabMap = null;       // Map<lowercase_en, { es, tier }> — filtered by unlocked tiers
   let fullVocab = [];        // Raw vocabulary array (all tiers)
   let wordsPerTier = {};     // tier → total word count
+  let knownWords = new Set(); // Words marked as known in IndexedDB
   let currentDensity = 0.05; // Default tier-1 density
   let enabled = true;
 
@@ -53,6 +54,7 @@
     try {
       progress = await SideloadStorage.getProgress();
       densityOverride = await SideloadStorage.getSetting('densityOverride', null);
+      knownWords = await SideloadStorage.getKnownWords();
     } catch (err) {
       // Storage not ready — use defaults
     }
@@ -185,7 +187,8 @@
 
       // Create replacement span
       const span = document.createElement('span');
-      span.className = 'sideload-word';
+      const isKnown = knownWords.has(m.wordLower);
+      span.className = isKnown ? 'sideload-word sideload-word--known' : 'sideload-word';
       span.dataset.original = m.word;
       span.dataset.tier = m.entry.tier;
       span.dataset.es = m.entry.es;
