@@ -47,6 +47,22 @@ Users will lose keys. Recovery must exist without compromising the no-account mo
 - Extension settings show: "Save your key: `SL-7K4M-R2X9-P5NW`" with a copy button as first line of defense
 - Popup shows a persistent "your key" reminder if sync is active
 
+### Key Rotation
+
+Keys can be leaked or compromised. Users must be able to rotate without losing data.
+
+- The underlying sync identity is an internal **account ID** (opaque UUID), not the key itself
+- A key is a pointer to an account ID: `key_hash → account_id`
+- Sync data is stored under the account ID: `account_id → { known_words, updated_at }`
+- **Rotation flow:**
+  1. User visits recovery page → enters email → requests new key
+  2. Server generates new key, points it to the **same account ID**
+  3. Old key is immediately invalidated (deleted from KV)
+  4. New key sent via email
+  5. User pastes new key in extension → sync resumes with all existing data
+- Rotation is idempotent: rotating again just replaces the key, same account ID
+- Extension detects invalidated key (sync returns 401) → shows "Key rotated — enter your new key"
+
 ### Sync Protocol
 
 The known-words set is a grow-only CRDT (G-Set). Merge = union. No conflicts possible.
