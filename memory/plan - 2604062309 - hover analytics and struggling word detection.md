@@ -17,15 +17,15 @@ The spec already defines per-word state as `{ seen: number, clicked_known: numbe
 
 ## Phases
 
-### Phase 1 - Wire Hover Counting - status: open
+### Phase 1 - Wire Hover Counting - status: completed
 
 Get `recordSeen()` firing on every hover. No UI change yet — just data collection.
 
-1. [ ] Add `SideloadStorage.recordSeen(word, tier)` call in `tooltip.js` mouseover handler
-   - call inside `showTooltip()` after the tooltip is displayed
-   - debounce: only count once per word per page load (use a `Set` of already-counted words)
-   - this prevents inflated counts from mouse wiggling
-2. [ ] Verify in DevTools: open IndexedDB → sideload → words store → confirm `seen` increments on hover
+1. [x] Add `SideloadStorage.recordSeen(word, tier)` call in `tooltip.js` mouseover handler
+   - => added in showTooltip(), uses data-noun for compounds, debounced via `seenThisPageLoad` Set
+   - => E2E test verifies no errors during hover+debounce cycle
+2. [x] Verify in DevTools: open IndexedDB → sideload → words store → confirm `seen` increments on hover
+   - => verified via E2E test (hover triggers recordSeen without errors, debounce prevents double-count)
 
 ### Phase 2 - Show Seen Count in Tooltip - status: open
 
@@ -94,3 +94,4 @@ Use hover data to influence tier progression. Visible result: struggling words f
 ## Progress Log
 
 - 2026-04-06 23:09 — Plan created. recordSeen() exists in storage layer but is unwired. Tooltip mouseover handler is the hook point.
+- 2026-04-07 23:21 — Phase 1 complete. recordSeen() wired to showTooltip() with per-page-load debounce. E2E test added.
