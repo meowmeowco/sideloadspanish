@@ -29,6 +29,7 @@
   let strugglingWords = new Set(); // Words seen 10+ times without marking known
   let currentDensity = 0.05; // Default tier-1 density
   let enabled = true;
+  let initialized = false;
 
   /**
    * Load vocabulary JSON and initialize tier-aware state.
@@ -352,12 +353,8 @@
    * MutationObserver: watch for new DOM nodes and replace words in them.
    */
   function observeDynamicContent() {
-    let isReplacing = false;
-
     const observer = new MutationObserver((mutations) => {
       if (!vocabMap || vocabMap.size === 0 || !enabled) return;
-      // Skip mutations caused by our own replacements
-      if (isReplacing) return;
 
       const nodesToProcess = [];
       for (const mutation of mutations) {
@@ -372,11 +369,12 @@
 
       if (nodesToProcess.length === 0) return;
 
-      isReplacing = true;
+      // Disconnect before replacing to prevent self-triggered mutations
+      observer.disconnect();
       for (const node of nodesToProcess) {
         replaceWords(node);
       }
-      isReplacing = false;
+      observer.observe(document.body, { childList: true, subtree: true });
     });
 
     observer.observe(document.body, {
@@ -391,6 +389,9 @@
    * Initialize: load vocab, compute tiers, run replacement, observe dynamic content.
    */
   async function init() {
+    if (initialized) return;
+    initialized = true;
+
     // Check domain blacklist before doing any work
     if (await isDomainBlacklisted()) {
       console.log('[Sideload] Domain is blacklisted — skipping');

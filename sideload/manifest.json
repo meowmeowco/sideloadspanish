@@ -5,7 +5,6 @@
   "description": "Learn Spanish while browsing — words on pages are progressively replaced with Spanish translations based on your level.",
   "permissions": [
     "storage",
-    "activeTab",
     "tabs"
   ],
   "background": {
