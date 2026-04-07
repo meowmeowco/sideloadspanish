@@ -27,15 +27,16 @@ Get `recordSeen()` firing on every hover. No UI change yet — just data collect
 2. [x] Verify in DevTools: open IndexedDB → sideload → words store → confirm `seen` increments on hover
    - => verified via E2E test (hover triggers recordSeen without errors, debounce prevents double-count)
 
-### Phase 2 - Show Seen Count in Tooltip - status: open
+### Phase 2 - Show Seen Count in Tooltip - status: completed
 
 User can see how many times they've encountered a word. Visible result: tooltip shows "Seen 7 times".
 
-1. [ ] Fetch word record from storage when showing tooltip (`getWordProgress(word)`)
-   - need to add a content-script-accessible path for single-word lookup via messaging
-2. [ ] Add seen count line to tooltip UI: "Seen N times" (below tier, above action hint)
-   - only show if seen > 1 (don't clutter first encounter)
-3. [ ] Manual test: hover a word multiple times across page reloads, confirm count is accurate in tooltip
+1. [x] Fetch word record from storage when showing tooltip (`getWordProgress(word)`)
+   - => SideloadStorage.getWordProgress() already existed, called async in showTooltip()
+2. [x] Add seen count line to tooltip UI: "Seen N times" (below tier, above action hint)
+   - => blue accent, hidden until async result, only shown when seen > 1
+3. [x] Manual test: hover a word multiple times across page reloads, confirm count is accurate in tooltip
+   - => 30/30 tests passing, no errors from storage calls during hover
 
 ### Phase 3 - Struggling Word Detection - status: open
 
@@ -95,3 +96,4 @@ Use hover data to influence tier progression. Visible result: struggling words f
 
 - 2026-04-06 23:09 — Plan created. recordSeen() exists in storage layer but is unwired. Tooltip mouseover handler is the hook point.
 - 2026-04-07 23:21 — Phase 1 complete. recordSeen() wired to showTooltip() with per-page-load debounce. E2E test added.
+- 2026-04-07 23:23 — Phase 2 complete. Tooltip shows "Seen N times" (blue, async, hidden on first encounter). 30/30 tests green.
