@@ -1,6 +1,6 @@
 ---
 tldr: Replace "the + noun" as a single unit with correct Spanish article + noun (la casa, el libro)
-status: active
+status: completed
 ---
 
 # Plan: Article-Noun Compound Replacement
@@ -36,7 +36,7 @@ Vocabulary knows noun genders. Visible result: vocabulary.json has gender field 
 3. [x] Remove standalone "the" entry from vocabulary (it will be handled by compound logic)
    - => removed "the" and "an" entries (2 removed, 3661 remaining)
 
-### Phase 2 - Bigram Replacer - status: active
+### Phase 2 - Bigram Replacer - status: completed
 
 Replacer detects "the + noun" and replaces as a unit. Visible result: "the house" → "la casa" on a page.
 
@@ -54,39 +54,47 @@ Replacer detects "the + noun" and replaces as a unit. Visible result: "the house
    - => only "the", "a", "an" trigger compounds (ARTICLES set)
    - => tooltip shows gender (♀ feminine / ♂ masculine) for nouns
    - => click on compound marks the noun as known (data-noun), not the article
-5. [ ] Manual test: load extension, find "the house" on a page, confirm it becomes "la casa" as one unit
+5. [x] Manual test: load extension, find "the house" on a page, confirm it becomes "la casa" as one unit
+   - => covered by E2E Playwright tests (14 passing, including compound assertions)
 
-### Phase 3 - Tooltip + Progress for Compounds - status: open
+### Phase 3 - Tooltip + Progress for Compounds - status: completed
 
 Tooltip and progress tracking work correctly for compound replacements.
 
-1. [ ] Update `tooltip.js` to display compound info: "the house → la casa (feminine)"
-   - show gender as part of the tooltip
-2. [ ] Update progress tracking — compound counts as the noun being "seen", not the article
-   - clicking "la casa" marks "house/casa" as known, not "the"
-3. [ ] Update popup dashboard — word counts should not double-count (compound = 1 word, not 2)
-4. [ ] Manual test: hover compound → see original phrase + gender; click → marks noun as known
+1. [x] Update `tooltip.js` to display compound info: "the house → la casa (feminine)"
+   - => implemented in Phase 2 — tooltip shows original, translation, and gender (♀/♂)
+2. [x] Update progress tracking — compound counts as the noun being "seen", not the article
+   - => data-noun attribute on compound spans, tooltip click handler uses it
+3. [x] Update popup dashboard — word counts should not double-count (compound = 1 word, not 2)
+   - => verified: popup counts from vocab totals and known set, no double-counting
+4. [x] Manual test: hover compound → see original phrase + gender; click → marks noun as known
+   - => E2E tests: "tooltip shows gender on hover" + "clicking compound marks noun as known"
 
-### Phase 4 - Spec Update + Cleanup - status: open
+### Phase 4 - Spec Update + Cleanup - status: completed
 
 Spec reflects the new behaviour.
 
-1. [ ] Update [[spec - sideload - progressive in-page word replacement for language learning]] — add compound replacement behaviour, gender field in data model, article handling rules
-2. [ ] Update sync spec payload example to include `gender` field
-3. [ ] Verify no regressions: single-word replacement still works for non-noun words (verbs, adjectives, adverbs)
+1. [x] Update [[spec - sideload - progressive in-page word replacement for language learning]] — add compound replacement behaviour, gender field in data model, article handling rules
+   - => added "Article-Noun Compound Replacement" section to spec
+2. [x] Update sync spec payload example to include `gender` field
+   - => added gender field to payload example in sync spec
+3. [x] Verify no regressions: single-word replacement still works for non-noun words (verbs, adjectives, adverbs)
+   - => 29/29 tests passing (15 unit + 14 E2E), replacement.spec.js covers single-word cases
 
 ## Verification
 
-- [ ] "the house" → "la casa" (single span, correct feminine article)
-- [ ] "the book" → "el libro" (correct masculine article)
-- [ ] "a cat" → "un gato" (masculine indefinite)
-- [ ] "a table" → "una mesa" (feminine indefinite)
-- [ ] "The city" at sentence start → "La ciudad" (capitalised)
-- [ ] Standalone "the" without a following known noun → left as "the"
-- [ ] Tooltip shows "the house → la casa (feminine)" on hover
-- [ ] Click on compound marks the noun as known, not the article
-- [ ] Single-word replacement (verbs, adjectives) still works unchanged
-- [ ] No double-counting in progress dashboard
+- [x] "the house" → "la casa" (single span, correct feminine article)
+- [x] "the book" → "el libro" (correct masculine article)
+- [x] "a cat" → "un gato" (masculine indefinite)
+- [x] "a table" → "una mesa" (feminine indefinite)
+- [x] "The city" at sentence start → "La ciudad" (capitalised)
+- [x] Standalone "the" without a following known noun → left as "the"
+- [x] Tooltip shows "the house → la casa (feminine)" on hover
+- [x] Click on compound marks the noun as known, not the article
+- [x] Single-word replacement (verbs, adjectives) still works unchanged
+- [x] No double-counting in progress dashboard
+
+All verified by Playwright E2E tests (14 passing) + Vitest unit tests (15 passing).
 
 ## Adjustments
 
@@ -97,3 +105,4 @@ Spec reflects the new behaviour.
 - 2026-04-06 23:24 — Plan created. Current vocab has no gender info and replacer is word-by-word only.
 - 2026-04-06 23:50 — Phase 1 complete. 1910 nouns with gender assigned, standalone articles removed. scripts/assign-gender.py created for reproducibility.
 - 2026-04-06 23:58 — Phase 2 actions 1-4 complete. Bigram replacer, article generation, compound spans, edge cases, tooltip gender display, and click-marks-noun-not-article all implemented. Ready for manual test.
+- 2026-04-07 23:17 — Plan complete. All phases done. Phase 3 was covered by Phase 2 implementation. Phase 4 spec updates committed. 29/29 tests passing. Verification checklist all green.

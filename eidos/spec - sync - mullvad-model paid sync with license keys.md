@@ -98,8 +98,8 @@ The plaintext before encryption:
 ```json
 {
   "words": [
-    { "en": "time", "known": true, "clicked_known": 3, "seen": 12, "tier": 1 },
-    { "en": "house", "known": true, "clicked_known": 1, "seen": 5, "tier": 1 }
+    { "en": "time", "known": true, "clicked_known": 3, "seen": 12, "tier": 1, "gender": "m" },
+    { "en": "house", "known": true, "clicked_known": 1, "seen": 5, "tier": 1, "gender": "f" }
   ],
   "version": 2
 }

@@ -23,6 +23,16 @@ A Chrome/Zen browser extension that replaces English words on web pages with the
 - Words inside `<code>`, `<pre>`, `<script>`, `<style>`, `<input>`, `<textarea>` are never replaced
 - Proper nouns, URLs, and email addresses are excluded
 
+### Article-Noun Compound Replacement
+
+- When an English article (`the`, `a`, `an`) is followed by a known noun with gender, both are replaced as a single unit
+- The Spanish article matches the noun's gender: `the house` → `la casa` (f), `the book` → `el libro` (m)
+- Indefinite articles follow the same pattern: `a dog` → `un perro` (m), `a table` → `una mesa` (f)
+- Capitalisation is preserved: `The city` at sentence start → `La ciudad`
+- Standalone articles without a following known noun are left as-is (no correct translation without context)
+- The compound is rendered as a single `<span>` — tooltip shows the full original phrase, gender, and tier
+- Clicking a compound marks the **noun** as known, not the article
+
 ### Vocabulary Source (Hybrid)
 
 - Ship a **built-in frequency list** of the top ~5000 English-Spanish word pairs, tagged by tier and gender
