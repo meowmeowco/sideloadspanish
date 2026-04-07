@@ -94,6 +94,22 @@
       tip.appendChild(genderLine);
     }
 
+    // Seen count (populated async — hidden until loaded, only shown if seen > 1)
+    const seenLine = document.createElement('div');
+    seenLine.className = 'sideload-tooltip__seen';
+    seenLine.style.display = 'none';
+    tip.appendChild(seenLine);
+
+    // Fetch seen count from storage
+    if (typeof SideloadStorage !== 'undefined') {
+      SideloadStorage.getWordProgress(wordToTrack).then((record) => {
+        if (record && record.seen > 1) {
+          seenLine.textContent = `Seen ${record.seen} times`;
+          seenLine.style.display = '';
+        }
+      }).catch(() => {});
+    }
+
     // Tier badge
     const tierLine = document.createElement('div');
     tierLine.className = 'sideload-tooltip__tier';
