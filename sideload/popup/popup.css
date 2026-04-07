@@ -185,6 +185,14 @@ body {
   flex-shrink: 0;
 }
 
+.tier-row__readiness {
+  font-size: 10px;
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+  cursor: help;
+}
+
 .tier-row--locked {
   opacity: 0.4;
 }

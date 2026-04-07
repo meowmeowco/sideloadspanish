@@ -72,13 +72,33 @@ document.addEventListener('DOMContentLoaded', async () => {
       tierHintEl.textContent = tierPct >= 80 ? 'Master level!' : 'Keep going!';
     }
 
-    // Tier breakdown bars
+    // Tier breakdown bars with readiness indicators
+    let strugglingWords = [];
+    try {
+      strugglingWords = await SideloadStorage.getStrugglingWords() || [];
+    } catch (_) { /* ignore */ }
+
     tierBarsEl.innerHTML = '';
     for (let t = 1; t <= 5; t++) {
       const total = vocabTierTotals[t] || 0;
       const known = progress.tiers[t]?.known || 0;
       const pct = total > 0 ? Math.round((known / total) * 100) : 0;
       const isLocked = !unlockedTiers.has(t);
+      const readiness = SideloadTiers.getTierReadiness(t, progress, vocabTierTotals, strugglingWords);
+
+      const readinessIcon = {
+        green: '🟢',
+        yellow: '🟡',
+        grey: '⚪',
+        locked: '🔒',
+      }[readiness] || '';
+
+      const readinessTitle = {
+        green: 'Ready to advance',
+        yellow: '5+ struggling words — consider reviewing',
+        grey: `Below ${Math.round(SideloadTiers.UNLOCK_THRESHOLD * 100)}% known`,
+        locked: 'Locked',
+      }[readiness] || '';
 
       const row = document.createElement('div');
       row.className = `tier-row${isLocked ? ' tier-row--locked' : ''}`;
@@ -89,6 +109,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div class="tier-row__fill tier-row__fill--${t}" style="width: ${pct}%"></div>
         </div>
         <span class="tier-row__count">${known}/${total}</span>
+        <span class="tier-row__readiness" title="${readinessTitle}">${readinessIcon}</span>
       `;
 
       tierBarsEl.appendChild(row);

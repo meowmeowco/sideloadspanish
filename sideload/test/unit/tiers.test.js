@@ -148,3 +148,36 @@ describe('filterByUnlockedTiers', () => {
     expect(filtered.map((w) => w.en)).toEqual(['house', 'city']);
   });
 });
+
+describe('getTierReadiness', () => {
+  const wordsPerTier = { 1: 100, 2: 200 };
+
+  it('returns grey when below 80%', () => {
+    const progress = { tiers: { 1: { known: 50 } } };
+    expect(SideloadTiers.getTierReadiness(1, progress, wordsPerTier, [])).toBe('grey');
+  });
+
+  it('returns green when 80%+ known and few struggling', () => {
+    const progress = { tiers: { 1: { known: 85 } } };
+    const struggling = [{ tier: 1 }, { tier: 1 }]; // only 2
+    expect(SideloadTiers.getTierReadiness(1, progress, wordsPerTier, struggling)).toBe('green');
+  });
+
+  it('returns yellow when 80%+ known but 5+ struggling words in tier', () => {
+    const progress = { tiers: { 1: { known: 85 } } };
+    const struggling = Array.from({ length: 6 }, () => ({ tier: 1 }));
+    expect(SideloadTiers.getTierReadiness(1, progress, wordsPerTier, struggling)).toBe('yellow');
+  });
+
+  it('counts only struggling words in the specific tier', () => {
+    const progress = { tiers: { 1: { known: 85 } } };
+    // 6 struggling but all in tier 2, none in tier 1
+    const struggling = Array.from({ length: 6 }, () => ({ tier: 2 }));
+    expect(SideloadTiers.getTierReadiness(1, progress, wordsPerTier, struggling)).toBe('green');
+  });
+
+  it('returns locked for empty tier', () => {
+    const progress = { tiers: {} };
+    expect(SideloadTiers.getTierReadiness(3, progress, { 3: 0 }, [])).toBe('locked');
+  });
+});

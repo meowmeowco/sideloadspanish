@@ -118,6 +118,34 @@ const SideloadTiers = (() => {
     return shuffled.slice(0, targetCount);
   }
 
+  /**
+   * Get tier readiness status factoring in struggling words.
+   * @param {number} tier
+   * @param {Object} progress - From SideloadStorage.getProgress()
+   * @param {Object<number, number>} wordsPerTier
+   * @param {Array} strugglingWords - From SideloadStorage.getStrugglingWords()
+   * @returns {'locked'|'green'|'yellow'|'grey'} Readiness status
+   *   green: 80%+ known, few struggling words (< 5 in this tier)
+   *   yellow: 80%+ known, but 5+ struggling words in this tier
+   *   grey: below 80% known
+   *   locked: tier not yet unlocked
+   */
+  function getTierReadiness(tier, progress, wordsPerTier, strugglingWords) {
+    const totalInTier = wordsPerTier[tier] || 0;
+    if (totalInTier === 0) return 'locked';
+
+    const knownInTier = progress.tiers[tier]?.known || 0;
+    const pct = knownInTier / totalInTier;
+
+    if (pct < UNLOCK_THRESHOLD) return 'grey';
+
+    // Count struggling words in this tier
+    const strugglingInTier = strugglingWords.filter((w) => w.tier === tier).length;
+    if (strugglingInTier >= 5) return 'yellow';
+
+    return 'green';
+  }
+
   return {
     TIER_COUNT,
     UNLOCK_THRESHOLD,
@@ -128,5 +156,6 @@ const SideloadTiers = (() => {
     getDensity,
     filterByUnlockedTiers,
     applyDensity,
+    getTierReadiness,
   };
 })();

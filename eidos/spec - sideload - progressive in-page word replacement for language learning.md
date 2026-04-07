@@ -57,6 +57,24 @@ A Chrome/Zen browser extension that replaces English words on web pages with the
 - Words from all unlocked tiers are eligible for replacement
 - **Replacement density** increases with tier: tier 1 replaces ~5% of eligible words on a page, scaling up to ~30% at tier 5
 
+### Hover Analytics & Struggling Words
+
+- `seen` count increments on hover (debounced: once per word per page load)
+- **Struggling word**: seen >= 10 times without marking known (threshold configurable)
+- Struggling words get distinct visual styling (red underline) and a tooltip hint
+- Tooltip shows "Seen N times" for words encountered more than once
+- Popup dashboard shows a "Struggling Words" section with up to 20 words, sorted by seen count
+- Clicking "Know it" in the struggling list marks the word as known and removes it from the list
+
+### Tier Readiness
+
+- Each tier shows a readiness indicator alongside the progress bar:
+  - 🟢 Green: 80%+ known, fewer than 5 struggling words in this tier
+  - 🟡 Yellow: 80%+ known, but 5+ struggling words — consider reviewing before advancing
+  - ⚪ Grey: below 80% known
+  - 🔒 Locked: tier not yet unlocked
+- Yellow is a warning, not a blocker — users can still advance
+
 ### Progress Tracking
 
 - Per-word state: `{ seen: number, clicked_known: number, tier: number, known: boolean }`
