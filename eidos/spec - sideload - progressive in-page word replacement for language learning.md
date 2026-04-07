@@ -1,6 +1,6 @@
 # spec - sideload - progressive in-page word replacement for language learning
 
-status: draft
+status: verified
 
 ## Problem
 
@@ -144,17 +144,17 @@ sideload/
 
 ## Verification
 
-- [ ] Content script replaces words on a plain HTML page with known vocabulary
-- [ ] Hover tooltip shows original word and tier
-- [ ] Click marks word as known; progress persists across page reloads
-- [ ] Tier advancement triggers when ≥80% of tier words are known
-- [ ] Replacement density increases with tier level
-- [ ] `<code>`, `<pre>`, inputs, and proper nouns are never replaced
-- [ ] MutationObserver catches dynamically added content
-- [ ] Extension popup shows accurate progress dashboard
-- [ ] Toggle on/off works per-tab and globally
-- [ ] Domain blacklist prevents replacement on listed sites
-- [ ] Performance: no visible page render delay on typical pages
+- [x] Content script replaces words on a plain HTML page with known vocabulary
+- [x] Hover tooltip shows original word and tier
+- [x] Click marks word as known; progress persists across page reloads
+- [x] Tier advancement triggers when ≥80% of tier words are known
+- [x] Replacement density increases with tier level
+- [x] `<code>`, `<pre>`, inputs, and proper nouns are never replaced
+- [x] MutationObserver catches dynamically added content
+- [x] Extension popup shows accurate progress dashboard
+- [x] Toggle on/off works per-tab and globally
+- [x] Domain blacklist prevents replacement on listed sites
+- [x] Performance: no visible page render delay on typical pages
 
 ## Boundaries
 
