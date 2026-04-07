@@ -280,3 +280,65 @@ textarea:focus {
 .setting--danger {
   margin-top: 8px;
 }
+
+/* ── Struggling Words ── */
+
+.section-hint {
+  font-size: 11px;
+  color: #95a5a6;
+  margin-bottom: 8px;
+}
+
+.struggling-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  border-bottom: 1px solid #ecf0f1;
+}
+
+.struggling-row:last-child {
+  border-bottom: none;
+}
+
+.struggling-row--known {
+  opacity: 0.5;
+}
+
+.struggling-row__word {
+  font-weight: 600;
+  color: #e74c3c;
+  flex: 1;
+}
+
+.struggling-row__original {
+  font-size: 11px;
+  color: #95a5a6;
+  flex: 1;
+}
+
+.struggling-row__seen {
+  font-size: 11px;
+  color: #3498db;
+  min-width: 30px;
+  text-align: right;
+}
+
+.btn--tiny {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: #27ae60;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.btn--tiny:hover {
+  background: #219a52;
+}
+
+.btn--tiny:disabled {
+  background: #95a5a6;
+  cursor: default;
+}

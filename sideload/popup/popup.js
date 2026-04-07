@@ -22,14 +22,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   const blacklistInput = document.getElementById('blacklistInput');
   const saveBlacklistBtn = document.getElementById('saveBlacklist');
   const resetProgressBtn = document.getElementById('resetProgress');
+  const strugglingSection = document.getElementById('strugglingSection');
+  const strugglingHint = document.getElementById('strugglingHint');
+  const strugglingList = document.getElementById('strugglingList');
 
-  // ── Load vocabulary for tier totals ──
+  // ── Load vocabulary for tier totals + struggling word lookups ──
   let vocabTierTotals = {};
   try {
     const url = chrome.runtime.getURL('data/vocabulary.json');
     const response = await fetch(url);
-    const vocab = await response.json();
-    vocabTierTotals = SideloadTiers.countWordsPerTier(vocab);
+    fullVocab = await response.json();
+    vocabTierTotals = SideloadTiers.countWordsPerTier(fullVocab);
   } catch (err) {
     console.error('[Sideload Popup] Failed to load vocabulary:', err);
   }
@@ -89,6 +92,58 @@ document.addEventListener('DOMContentLoaded', async () => {
       `;
 
       tierBarsEl.appendChild(row);
+    }
+  }
+
+  // ── Render struggling words ──
+  async function renderStruggling() {
+    try {
+      const words = await SideloadStorage.getStrugglingWords();
+      if (!words || words.length === 0) {
+        strugglingSection.style.display = 'none';
+        return;
+      }
+
+      strugglingSection.style.display = '';
+      strugglingHint.textContent = `${words.length} word${words.length > 1 ? 's' : ''} seen 10+ times without marking known`;
+      strugglingList.innerHTML = '';
+
+      // Find most seen word for header stat
+      const topWord = words[0];
+      if (topWord) {
+        const vocabEntry = fullVocab.find((v) => v.en.toLowerCase() === topWord.en);
+        const es = vocabEntry ? vocabEntry.es : topWord.en;
+        strugglingHint.textContent += ` — most seen: "${es}" (${topWord.seen}x)`;
+      }
+
+      // Show up to 20 words
+      const capped = words.slice(0, 20);
+      for (const word of capped) {
+        const vocabEntry = fullVocab.find((v) => v.en.toLowerCase() === word.en);
+        const es = vocabEntry ? vocabEntry.es : '?';
+
+        const row = document.createElement('div');
+        row.className = 'struggling-row';
+        row.innerHTML = `
+          <span class="struggling-row__word">${es}</span>
+          <span class="struggling-row__original">${word.en}</span>
+          <span class="struggling-row__seen">${word.seen}x</span>
+          <button class="struggling-row__know btn btn--tiny">Know it</button>
+        `;
+
+        // Click "Know it" → mark known
+        const btn = row.querySelector('.struggling-row__know');
+        btn.addEventListener('click', async () => {
+          await SideloadStorage.markKnown(word.en, word.tier || 1);
+          btn.textContent = '✓';
+          btn.disabled = true;
+          row.classList.add('struggling-row--known');
+        });
+
+        strugglingList.appendChild(row);
+      }
+    } catch (err) {
+      console.error('[Sideload Popup] Failed to load struggling words:', err);
     }
   }
 
@@ -161,5 +216,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ── Init ──
   await SideloadStorage.open();
   await renderProgress();
+  await renderStruggling();
   await loadSettings();
 });
