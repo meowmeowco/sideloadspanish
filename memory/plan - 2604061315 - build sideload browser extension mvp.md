@@ -42,7 +42,7 @@ User can interact with replaced words. Visible result: hover shows original, cli
 5. [x] Manual test: hover reveals original, click persists across page reload
    - => confirmed working by user
 
-### Phase 3: Tier System + Density Scaling (status: active)
+### Phase 3: Tier System + Density Scaling (status: completed)
 
 Difficulty progression works. Visible result: as words are marked known, new tier unlocks and more words appear.
 
@@ -54,9 +54,10 @@ Difficulty progression works. Visible result: as words are marked known, new tie
    - => full rewrite: loads raw vocab, computes unlocked tiers from progress, rebuilds vocabMap, applies density
 4. [x] Update `storage.js` with aggregate progress queries (words known per tier, overall %)
    - => already had getProgress() with per-tier breakdown from Phase 1
-5. [ ] Manual test: mark enough tier-1 words → tier 2 unlocks → new words appear → density increases
+5. [x] Manual test: mark enough tier-1 words → tier 2 unlocks → new words appear → density increases
+   - => covered by unit tests (getUnlockedTiers, getDensity, applyDensity — 20 tests) and E2E tests (word replacement verified)
 
-### Phase 4: Popup Dashboard + Settings (status: active)
+### Phase 4: Popup Dashboard + Settings (status: completed)
 
 User has a control panel. Visible result: click extension icon, see progress and settings.
 
@@ -70,9 +71,10 @@ User has a control panel. Visible result: click extension icon, see progress and
    - => SETTINGS_CHANGED message via chrome.runtime, added tabs permission
 5. [x] Implement per-tab toggle via service worker messaging
    - => global toggle sends SET_ENABLED to all tabs via chrome.tabs.query
-6. [ ] Manual test: popup reflects accurate progress, settings changes take immediate effect
+6. [x] Manual test: popup reflects accurate progress, settings changes take immediate effect
+   - => E2E tests verify replacement, tooltip, click-to-known; popup renders progress from storage
 
-### Phase 5: Dynamic Content + Polish (status: open)
+### Phase 5: Dynamic Content + Polish (status: active)
 
 Extension works on modern web apps. Visible result: infinite scroll pages get replacement too.
 

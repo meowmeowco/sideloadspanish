@@ -334,16 +334,82 @@
   }
 
   /**
-   * Initialize: load vocab, compute tiers, run replacement.
+   * Check if the current domain is blacklisted.
+   */
+  async function isDomainBlacklisted() {
+    try {
+      const blacklist = await SideloadStorage.getSetting('blacklist', '');
+      if (!blacklist) return false;
+      const domains = blacklist.split(/[\n,]/).map((d) => d.trim().toLowerCase()).filter(Boolean);
+      const currentHost = window.location.hostname.toLowerCase();
+      return domains.some((d) => currentHost === d || currentHost.endsWith('.' + d));
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /**
+   * MutationObserver: watch for new DOM nodes and replace words in them.
+   */
+  function observeDynamicContent() {
+    let isReplacing = false;
+
+    const observer = new MutationObserver((mutations) => {
+      if (!vocabMap || vocabMap.size === 0 || !enabled) return;
+      // Skip mutations caused by our own replacements
+      if (isReplacing) return;
+
+      const nodesToProcess = [];
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if (node.nodeType === Node.ELEMENT_NODE
+            && !node.classList?.contains('sideload-word')
+            && !node.classList?.contains('sideload-tooltip')) {
+            nodesToProcess.push(node);
+          }
+        }
+      }
+
+      if (nodesToProcess.length === 0) return;
+
+      isReplacing = true;
+      for (const node of nodesToProcess) {
+        replaceWords(node);
+      }
+      isReplacing = false;
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    return observer;
+  }
+
+  /**
+   * Initialize: load vocab, compute tiers, run replacement, observe dynamic content.
    */
   async function init() {
+    // Check domain blacklist before doing any work
+    if (await isDomainBlacklisted()) {
+      console.log('[Sideload] Domain is blacklisted — skipping');
+      return;
+    }
+
     await loadVocabulary();
     await rebuildVocabMap();
 
     if ('requestIdleCallback' in window) {
-      requestIdleCallback(() => replaceWords());
+      requestIdleCallback(() => {
+        replaceWords();
+        observeDynamicContent();
+      });
     } else {
-      setTimeout(() => replaceWords(), 0);
+      setTimeout(() => {
+        replaceWords();
+        observeDynamicContent();
+      }, 0);
     }
   }
 
