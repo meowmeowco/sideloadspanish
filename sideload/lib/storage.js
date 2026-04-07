@@ -42,6 +42,7 @@ const SideloadStorage = (() => {
     },
     setSetting(key, value) { return request('setSetting', { key, value }); },
     getSettings() { return request('getSettings'); },
+    getStrugglingWords(threshold) { return request('getStrugglingWords', { threshold }); },
     resetProgress() { return request('resetProgress'); },
   };
 })();

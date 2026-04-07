@@ -26,6 +26,7 @@
   let fullVocab = [];        // Raw vocabulary array (all tiers)
   let wordsPerTier = {};     // tier → total word count
   let knownWords = new Set(); // Words marked as known in IndexedDB
+  let strugglingWords = new Set(); // Words seen 10+ times without marking known
   let currentDensity = 0.05; // Default tier-1 density
   let enabled = true;
 
@@ -58,6 +59,8 @@
       progress = await SideloadStorage.getProgress();
       densityOverride = await SideloadStorage.getSetting('densityOverride', null);
       knownWords = await SideloadStorage.getKnownWords();
+      const strugglingList = await SideloadStorage.getStrugglingWords();
+      strugglingWords = new Set(strugglingList.map((r) => r.en));
     } catch (err) {
       // Storage not ready — use defaults
     }
@@ -271,7 +274,11 @@
       // Create replacement span
       const span = document.createElement('span');
       const isKnown = knownWords.has(m.wordLower);
-      span.className = isKnown ? 'sideload-word sideload-word--known' : 'sideload-word';
+      const isStruggling = !isKnown && strugglingWords.has(m.wordLower);
+      let cls = 'sideload-word';
+      if (isKnown) cls += ' sideload-word--known';
+      if (isStruggling) cls += ' sideload-word--struggling';
+      span.className = cls;
       span.dataset.tier = m.entry.tier;
 
       if (m.compound) {

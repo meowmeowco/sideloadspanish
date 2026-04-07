@@ -213,6 +213,14 @@ const Queries = {
     for (const r of records || []) settings[r.key] = r.value;
     return settings;
   },
+
+  async getStrugglingWords({ threshold }) {
+    const t = threshold || 10;
+    const all = await tx(WORDS_STORE, 'readonly', (s) => s.getAll());
+    return (all || [])
+      .filter((r) => r.seen >= t && !r.known)
+      .sort((a, b) => b.seen - a.seen);
+  },
 };
 
 // ── Unified dispatch ──

@@ -18,6 +18,12 @@
   opacity: 0.85;
 }
 
+/* Struggling state — seen 10+ times without marking known */
+.sideload-word--struggling {
+  border-bottom: 2px dotted #e74c3c;
+  background-color: rgba(231, 76, 60, 0.06);
+}
+
 /* Click pulse animation */
 .sideload-word--pulse {
   animation: sideload-pulse 0.3s ease-out;

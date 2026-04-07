@@ -117,9 +117,17 @@
     tip.appendChild(tierLine);
 
     // Known status / action hint
+    const isStruggling = target.classList.contains('sideload-word--struggling');
     const actionLine = document.createElement('div');
     actionLine.className = 'sideload-tooltip__action';
-    actionLine.textContent = isKnown ? '✓ Known' : 'Click to mark as known';
+    if (isKnown) {
+      actionLine.textContent = '✓ Known';
+    } else if (isStruggling) {
+      actionLine.textContent = 'Having trouble? Try writing this word down';
+      actionLine.style.color = '#e74c3c';
+    } else {
+      actionLine.textContent = 'Click to mark as known';
+    }
     tip.appendChild(actionLine);
 
     tip.classList.add('sideload-tooltip--visible');
