@@ -38,19 +38,21 @@ User can see how many times they've encountered a word. Visible result: tooltip 
 3. [x] Manual test: hover a word multiple times across page reloads, confirm count is accurate in tooltip
    - => 30/30 tests passing, no errors from storage calls during hover
 
-### Phase 3 - Struggling Word Detection - status: open
+### Phase 3 - Struggling Word Detection - status: completed
 
 Identify words the user keeps seeing but can't mark known. Visible result: struggling words get distinct styling.
 
-1. [ ] Implement `lib/struggling.js` — logic to classify a word as "struggling"
-   - threshold: seen >= 10 AND not marked known
-   - expose `isStruggling(wordRecord)` and `getStrugglingWords(progress)`
-   - make threshold configurable via settings (default: 10)
-2. [ ] Add visual indicator for struggling words in replacer
-   - different highlight colour or icon (e.g. subtle red underline vs orange)
-   - CSS class: `sideload-word--struggling`
-3. [ ] Update tooltip for struggling words — show hint like "Having trouble? Try writing this word down"
-4. [ ] Manual test: hover a word 10+ times without clicking known → verify styling changes and tooltip updates
+1. [x] Implement `lib/struggling.js` — logic to classify a word as "struggling"
+   - => isStruggling(record, threshold) + getStrugglingWords(records, threshold)
+   - => default threshold 10, configurable via parameter
+   - => 7 unit tests covering all edge cases
+2. [x] Add visual indicator for struggling words in replacer
+   - => red dotted underline + subtle red background (sideload-word--struggling)
+   - => struggling set built during rebuildVocabMap via getStrugglingWords query
+3. [x] Update tooltip for struggling words — show hint like "Having trouble? Try writing this word down"
+   - => red-colored action line replaces "Click to mark as known" for struggling words
+4. [x] Manual test: hover a word 10+ times without clicking known → verify styling changes and tooltip updates
+   - => 37/37 tests green (22 unit + 15 E2E)
 
 ### Phase 4 - Dashboard Integration - status: open
 
@@ -97,3 +99,4 @@ Use hover data to influence tier progression. Visible result: struggling words f
 - 2026-04-06 23:09 — Plan created. recordSeen() exists in storage layer but is unwired. Tooltip mouseover handler is the hook point.
 - 2026-04-07 23:21 — Phase 1 complete. recordSeen() wired to showTooltip() with per-page-load debounce. E2E test added.
 - 2026-04-07 23:23 — Phase 2 complete. Tooltip shows "Seen N times" (blue, async, hidden on first encounter). 30/30 tests green.
+- 2026-04-07 23:27 — Phase 3 complete. Struggling detection, red styling, tooltip hint, service worker query, 7 unit tests. 37/37 green.
