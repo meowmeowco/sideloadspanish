@@ -87,4 +87,31 @@ test.describe('Basic word replacement', () => {
     // Should become known
     await expect(span).toHaveClass(/sideload-word--known/, { timeout: 2000 });
   });
+
+  test('hovering a word triggers recordSeen without errors', async ({ extensionPage }) => {
+    await extensionPage.goto(`${BASE_URL}/page-with-nouns.html`);
+    await extensionPage.waitForSelector('.sideload-word', { timeout: 10_000 });
+
+    // Collect console errors during hover
+    const errors = [];
+    extensionPage.on('console', (msg) => {
+      if (msg.type() === 'error') errors.push(msg.text());
+    });
+
+    const span = extensionPage.locator('.sideload-word').first();
+
+    // Hover triggers recordSeen
+    await span.hover();
+    await extensionPage.waitForTimeout(300);
+
+    // Hover away and back — should be debounced (no second recordSeen call)
+    await extensionPage.mouse.move(0, 0);
+    await extensionPage.waitForTimeout(200);
+    await span.hover();
+    await extensionPage.waitForTimeout(300);
+
+    // No errors from the storage calls
+    const sideloadErrors = errors.filter((e) => e.includes('[Sideload]'));
+    expect(sideloadErrors).toHaveLength(0);
+  });
 });

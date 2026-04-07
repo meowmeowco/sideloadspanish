@@ -12,6 +12,7 @@
 
   let tooltipEl = null;
   let hideTimeout = null;
+  const seenThisPageLoad = new Set(); // Debounce: count each word only once per page load
 
   /**
    * Create the tooltip element (singleton, reused across hovers).
@@ -58,6 +59,13 @@
 
     const original = target.dataset.original;
     const tier = parseInt(target.dataset.tier, 10);
+    const wordToTrack = (target.dataset.noun || original).toLowerCase();
+
+    // Record seen — debounced to once per word per page load
+    if (!seenThisPageLoad.has(wordToTrack) && typeof SideloadStorage !== 'undefined') {
+      seenThisPageLoad.add(wordToTrack);
+      SideloadStorage.recordSeen(wordToTrack, tier).catch(() => {});
+    }
     const spanish = target.dataset.es;
     const tierLabel = TIER_LABELS[tier] || `Tier ${tier}`;
     const isKnown = target.classList.contains('sideload-word--known');
