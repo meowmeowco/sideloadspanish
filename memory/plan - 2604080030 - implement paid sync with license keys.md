@@ -136,3 +136,4 @@ From spec — all must pass:
 ## Progress Log
 
 - 2026-04-08 00:30 — Plan created. 6 phases covering backend, crypto, sync client, payments, key lifecycle, and polish.
+- 2026-04-08 02:03 — Session end. Plan created only, no implementation started. MVP published to Chrome Web Store and GitHub.
