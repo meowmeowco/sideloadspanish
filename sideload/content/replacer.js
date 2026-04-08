@@ -23,6 +23,7 @@
   const ARTICLES = new Set(['the', 'a', 'an']);
 
   let vocabMap = null;       // Map<lowercase_en, { es, tier, gender }> — filtered by unlocked tiers
+  let esWordsSet = null;     // Set<lowercase_es> — used to skip already-translated words
   let fullVocab = [];        // Raw vocabulary array (all tiers)
   let wordsPerTier = {};     // tier → total word count
   let knownWords = new Set(); // Words marked as known in IndexedDB
@@ -41,6 +42,13 @@
       fullVocab = await response.json();
 
       wordsPerTier = SideloadTiers.countWordsPerTier(fullVocab);
+
+      // Build set of all Spanish translations to detect already-replaced text
+      esWordsSet = new Set();
+      for (const entry of fullVocab) {
+        esWordsSet.add(entry.es.toLowerCase());
+      }
+
       console.log(`[Sideload] Vocabulary loaded: ${fullVocab.length} words across ${Object.keys(wordsPerTier).length} tiers`);
     } catch (err) {
       console.error('[Sideload] Failed to load vocabulary:', err);
@@ -92,6 +100,7 @@
     while (current) {
       if (EXCLUDED_TAGS.has(current.tagName)) return true;
       if (current.classList?.contains('sideload-word')) return true;
+      if (current.classList?.contains('sideload-tooltip')) return true;
       if (current.isContentEditable) return true;
       current = current.parentElement;
     }
@@ -182,7 +191,8 @@
         const entry = vocabMap.get(next.wordLower);
 
         // Only compound if the noun has a gender AND there's only whitespace between
-        if (entry && entry.gender) {
+        // Also skip if the noun text is already a Spanish translation
+        if (entry && entry.gender && !(esWordsSet && esWordsSet.has(next.wordLower))) {
           const gap = text.slice(w.index + w.length, next.index);
           if (/^\s+$/.test(gap)) {
             const articleEs = getSpanishArticle(w.wordLower, entry.gender);
@@ -224,6 +234,8 @@
       if (isProbablyProperNoun(w.word, text, w.index)) continue;
       // Skip standalone articles — they're only useful in compounds
       if (ARTICLES.has(w.wordLower)) continue;
+      // Skip cognates where English === Spanish (e.g. "animal"→"animal") — no value in replacing
+      if (entry.es.toLowerCase() === w.wordLower) continue;
 
       matches.push({
         word: w.word,
@@ -404,12 +416,14 @@
     if ('requestIdleCallback' in window) {
       requestIdleCallback(() => {
         replaceWords();
-        observeDynamicContent();
+        // Delay observer setup to next task — lets queued MutationObserver
+        // microtasks from replaceWords() drain first, preventing self-observation
+        setTimeout(() => observeDynamicContent(), 0);
       });
     } else {
       setTimeout(() => {
         replaceWords();
-        observeDynamicContent();
+        setTimeout(() => observeDynamicContent(), 0);
       }, 0);
     }
   }
