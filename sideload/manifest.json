@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "Sideload Spanish",
+  "version": "0.1.2",
+  "description": "Learn Spanish while browsing — words on pages are progressively replaced with Spanish translations based on your level.",
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
+  "background": {
+    "service_worker": "background/service-worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["lib/storage.js", "lib/tiers.js", "lib/struggling.js", "content/replacer.js", "content/tooltip.js"],
+      "css": ["content/styles.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["data/vocabulary.json"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

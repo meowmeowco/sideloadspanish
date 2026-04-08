@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sideload Test — Dynamic Content</title>
+</head>
+<body>
+  <h1>Test Page: Dynamic Content</h1>
+
+  <div id="static-content">
+    <p>The house is big.</p>
+  </div>
+
+  <div id="dynamic-target"></div>
+
+  <button id="add-content" onclick="
+    var div = document.createElement('p');
+    div.id = 'injected';
+    div.textContent = 'The water is cold and the book is open.';
+    document.getElementById('dynamic-target').appendChild(div);
+  ">Add Content</button>
+</body>
+</html>

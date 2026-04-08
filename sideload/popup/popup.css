@@ -1,0 +1,352 @@
+/* Sideload Spanish — Popup Styles */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 340px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #fafafa;
+  color: #333;
+  font-size: 13px;
+}
+
+.popup-container {
+  padding: 16px;
+}
+
+/* ── Header ── */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.header h1 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+/* Toggle switch */
+.toggle {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  cursor: pointer;
+}
+
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle__slider {
+  position: absolute;
+  inset: 0;
+  background: #bdc3c7;
+  border-radius: 11px;
+  transition: background 0.2s;
+}
+
+.toggle__slider::before {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  left: 2px;
+  top: 2px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.toggle input:checked + .toggle__slider {
+  background: #27ae60;
+}
+
+.toggle input:checked + .toggle__slider::before {
+  transform: translateX(18px);
+}
+
+/* ── Sections ── */
+
+.section {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #ecf0f1;
+}
+
+.section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #95a5a6;
+  margin-bottom: 8px;
+}
+
+/* ── Stats ── */
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.stat-label {
+  color: #7f8c8d;
+}
+
+.stat-value {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+/* ── Progress Bar ── */
+
+.progress-bar {
+  height: 8px;
+  background: #ecf0f1;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 8px 0 4px;
+}
+
+.progress-bar__fill {
+  height: 100%;
+  background: linear-gradient(90deg, #e67e22, #f39c12);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+  min-width: 0;
+}
+
+.progress-hint {
+  font-size: 11px;
+  color: #95a5a6;
+}
+
+/* ── Tier Bars ── */
+
+.tier-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.tier-row__label {
+  width: 24px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #7f8c8d;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.tier-row__bar {
+  flex: 1;
+  height: 6px;
+  background: #ecf0f1;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.tier-row__fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.tier-row__fill--1 { background: #27ae60; }
+.tier-row__fill--2 { background: #2ecc71; }
+.tier-row__fill--3 { background: #f39c12; }
+.tier-row__fill--4 { background: #e67e22; }
+.tier-row__fill--5 { background: #e74c3c; }
+
+.tier-row__count {
+  width: 48px;
+  font-size: 11px;
+  color: #95a5a6;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.tier-row__readiness {
+  font-size: 10px;
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+  cursor: help;
+}
+
+.tier-row--locked {
+  opacity: 0.4;
+}
+
+/* ── Settings ── */
+
+.setting {
+  margin-bottom: 12px;
+}
+
+.setting:last-child {
+  margin-bottom: 0;
+}
+
+.setting label {
+  display: block;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 4px;
+}
+
+.setting-hint {
+  font-size: 11px;
+  color: #95a5a6;
+  margin-top: 2px;
+}
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.slider-row input[type="range"] {
+  flex: 1;
+  accent-color: #e67e22;
+}
+
+.slider-row span {
+  width: 36px;
+  text-align: right;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+textarea {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #dcdde1;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 12px;
+  resize: vertical;
+  margin-bottom: 4px;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: #e67e22;
+}
+
+/* ── Buttons ── */
+
+.btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn--small {
+  background: #3498db;
+  color: #fff;
+}
+
+.btn--small:hover {
+  background: #2980b9;
+}
+
+.btn--danger {
+  background: #e74c3c;
+  color: #fff;
+  width: 100%;
+}
+
+.btn--danger:hover {
+  background: #c0392b;
+}
+
+.setting--danger {
+  margin-top: 8px;
+}
+
+/* ── Struggling Words ── */
+
+.section-hint {
+  font-size: 11px;
+  color: #95a5a6;
+  margin-bottom: 8px;
+}
+
+.struggling-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  border-bottom: 1px solid #ecf0f1;
+}
+
+.struggling-row:last-child {
+  border-bottom: none;
+}
+
+.struggling-row--known {
+  opacity: 0.5;
+}
+
+.struggling-row__word {
+  font-weight: 600;
+  color: #e74c3c;
+  flex: 1;
+}
+
+.struggling-row__original {
+  font-size: 11px;
+  color: #95a5a6;
+  flex: 1;
+}
+
+.struggling-row__seen {
+  font-size: 11px;
+  color: #3498db;
+  min-width: 30px;
+  text-align: right;
+}
+
+.btn--tiny {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: #27ae60;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.btn--tiny:hover {
+  background: #219a52;
+}
+
+.btn--tiny:disabled {
+  background: #95a5a6;
+  cursor: default;
+}

@@ -1,0 +1,98 @@
+/* Sideload Spanish — Replaced Word Styling */
+
+.sideload-word {
+  border-bottom: 2px dotted #e67e22;
+  color: inherit;
+  cursor: help;
+  position: relative;
+  transition: background-color 0.15s ease;
+}
+
+.sideload-word:hover {
+  background-color: rgba(230, 126, 34, 0.12);
+}
+
+/* Known state — word has been clicked/marked as known */
+.sideload-word--known {
+  border-bottom-color: #27ae60;
+  opacity: 0.85;
+}
+
+/* Struggling state — seen 10+ times without marking known */
+.sideload-word--struggling {
+  border-bottom: 2px dotted #e74c3c;
+  background-color: rgba(231, 76, 60, 0.06);
+}
+
+/* Click pulse animation */
+.sideload-word--pulse {
+  animation: sideload-pulse 0.3s ease-out;
+}
+
+@keyframes sideload-pulse {
+  0% { background-color: rgba(39, 174, 96, 0); }
+  50% { background-color: rgba(39, 174, 96, 0.3); }
+  100% { background-color: rgba(39, 174, 96, 0); }
+}
+
+/* ── Tooltip ── */
+
+.sideload-tooltip {
+  position: absolute;
+  z-index: 2147483647;
+  background: #2c3e50;
+  color: #ecf0f1;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  max-width: 260px;
+  white-space: nowrap;
+}
+
+.sideload-tooltip--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.sideload-tooltip__original {
+  font-weight: 600;
+  font-size: 14px;
+  color: #fff;
+}
+
+.sideload-tooltip__translation {
+  color: #e67e22;
+  margin-top: 2px;
+}
+
+.sideload-tooltip__gender {
+  font-size: 11px;
+  color: #9b59b6;
+  margin-top: 2px;
+}
+
+.sideload-tooltip__seen {
+  font-size: 11px;
+  color: #3498db;
+  margin-top: 2px;
+}
+
+.sideload-tooltip__tier {
+  font-size: 11px;
+  color: #95a5a6;
+  margin-top: 4px;
+}
+
+.sideload-tooltip__action {
+  font-size: 11px;
+  color: #27ae60;
+  margin-top: 4px;
+  font-style: italic;
+}

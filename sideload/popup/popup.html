@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sideload Spanish</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <header class="header">
+      <h1>Sideload Spanish</h1>
+      <label class="toggle">
+        <input type="checkbox" id="globalToggle" checked>
+        <span class="toggle__slider"></span>
+      </label>
+    </header>
+
+    <!-- Current tier + overall progress -->
+    <section class="section">
+      <div class="stat-row">
+        <span class="stat-label">Current Tier</span>
+        <span class="stat-value" id="currentTier">A1</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Words Known</span>
+        <span class="stat-value" id="wordsKnown">0 / 0</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-bar__fill" id="tierProgress" style="width: 0%"></div>
+      </div>
+      <p class="progress-hint" id="tierHint">Mark words as known to advance</p>
+    </section>
+
+    <!-- Tier breakdown bars -->
+    <section class="section">
+      <h2 class="section-title">Tiers</h2>
+      <div id="tierBars"></div>
+    </section>
+
+    <!-- Struggling words -->
+    <section class="section" id="strugglingSection" style="display: none">
+      <h2 class="section-title">Struggling Words</h2>
+      <p class="section-hint" id="strugglingHint"></p>
+      <div id="strugglingList"></div>
+    </section>
+
+    <!-- Settings -->
+    <section class="section">
+      <h2 class="section-title">Settings</h2>
+
+      <div class="setting">
+        <label for="densitySlider">Replacement Density</label>
+        <div class="slider-row">
+          <input type="range" id="densitySlider" min="1" max="50" value="5">
+          <span id="densityValue">5%</span>
+        </div>
+        <p class="setting-hint">Override auto density (0 = use tier default)</p>
+      </div>
+
+      <div class="setting">
+        <label for="blacklistInput">Domain Blacklist</label>
+        <textarea id="blacklistInput" rows="3" placeholder="example.com&#10;another.com"></textarea>
+        <button id="saveBlacklist" class="btn btn--small">Save</button>
+      </div>
+
+      <div class="setting setting--danger">
+        <button id="resetProgress" class="btn btn--danger">Reset All Progress</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="../lib/storage.js"></script>
+  <script src="../lib/tiers.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
