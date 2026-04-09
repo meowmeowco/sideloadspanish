@@ -136,46 +136,63 @@
     }
     .btn--orange:hover { background: var(--orange-dark); }
 
-    /* ── Replaced words (demo) ── */
+    /* ── Replaced words (demo) — matches extension content/styles.css ── */
 
     .sl-word {
-      background: rgba(230, 126, 34, 0.12);
-      border-bottom: 2px solid var(--orange);
-      padding: 1px 3px;
-      border-radius: 3px;
+      border-bottom: 2px dotted var(--orange);
+      color: inherit;
       cursor: help;
       position: relative;
-      font-style: italic;
+      transition: background-color 0.15s ease;
+    }
+
+    .sl-word:hover {
+      background-color: rgba(230, 126, 34, 0.12);
     }
 
     .sl-tooltip {
-      display: none;
       position: absolute;
-      bottom: calc(100% + 8px);
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--navy);
-      color: #fff;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 13px;
-      font-style: normal;
-      white-space: nowrap;
-      pointer-events: none;
       z-index: 10;
-    }
-
-    .sl-tooltip::after {
-      content: '';
-      position: absolute;
-      top: 100%;
+      background: var(--navy);
+      color: #ecf0f1;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 13px;
+      line-height: 1.4;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+      pointer-events: none;
+      white-space: nowrap;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      top: calc(100% + 6px);
       left: 50%;
-      transform: translateX(-50%);
-      border: 5px solid transparent;
-      border-top-color: var(--navy);
+      margin-left: -60px;
     }
 
-    .sl-word:hover .sl-tooltip { display: block; }
+    .sl-word:hover .sl-tooltip {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .sl-tooltip__original {
+      font-weight: 600;
+      font-size: 14px;
+      color: #fff;
+    }
+
+    .sl-tooltip__tier {
+      font-size: 11px;
+      color: var(--light-grey);
+      margin-top: 2px;
+    }
+
+    .sl-tooltip__action {
+      font-size: 11px;
+      color: var(--green);
+      margin-top: 4px;
+      font-style: italic;
+    }
 
     /* ── Features ── */
 
@@ -354,16 +371,16 @@
   <section class="hero">
     <div class="container">
       <h1>
-        Learn <span class="sl-word">espa&ntilde;ol<span class="sl-tooltip">Spanish</span></span>
+        Learn <span class="sl-word">espa&ntilde;ol<span class="sl-tooltip"><span class="sl-tooltip__original">Spanish</span><br><span class="sl-tooltip__tier">Tier 1 &middot; A1</span><br><span class="sl-tooltip__action">Click to mark as known</span></span></span>
         while you browse
       </h1>
       <p>
         A browser extension that quietly replaces
-        <span class="sl-word">palabras<span class="sl-tooltip">words</span></span>
+        <span class="sl-word">palabras<span class="sl-tooltip"><span class="sl-tooltip__original">words</span><br><span class="sl-tooltip__tier">Tier 1 &middot; A1</span><br><span class="sl-tooltip__action">Click to mark as known</span></span></span>
         on every page you read. No flashcards, no schedule, no
-        <span class="sl-word">esfuerzo<span class="sl-tooltip">effort</span></span>.
+        <span class="sl-word">esfuerzo<span class="sl-tooltip"><span class="sl-tooltip__original">effort</span><br><span class="sl-tooltip__tier">Tier 2 &middot; A2</span><br><span class="sl-tooltip__action">Click to mark as known</span></span></span>.
         Just read the
-        <span class="sl-word">internet<span class="sl-tooltip">internet</span></span>
+        <span class="sl-word">internet<span class="sl-tooltip"><span class="sl-tooltip__original">internet</span><br><span class="sl-tooltip__tier">Tier 1 &middot; A1</span><br><span class="sl-tooltip__action">Click to mark as known</span></span></span>
         and pick up Spanish along the way.
       </p>
       <div class="hero-ctas">
