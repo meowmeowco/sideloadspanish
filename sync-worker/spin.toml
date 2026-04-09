@@ -1,0 +1,27 @@
+spin_manifest_version = 2
+
+[application]
+authors = ["~.~ <saint@ghost.lt>"]
+description = "Sideload Spanish — privacy-first sync backend"
+name = "sideload-sync"
+version = "0.1.0"
+
+[[trigger.http]]
+route = "/..."
+component = "sideload-sync"
+
+[variables]
+lemon_webhook_secret = { required = true }
+
+[component.sideload-sync]
+source = "dist/sync-worker.wasm"
+exclude_files = ["**/node_modules"]
+key_value_stores = ["default"]
+allowed_outbound_hosts = []
+
+[component.sideload-sync.variables]
+lemon_webhook_secret = "{{ lemon_webhook_secret }}"
+
+[component.sideload-sync.build]
+command = ["npm install", "npm run build"]
+watch = ["src/**/*.ts"]

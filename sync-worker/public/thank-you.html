@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sideload Spanish — Sync Activated</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f6fa;
+      color: #2c3e50;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      padding: 40px;
+      max-width: 480px;
+      width: 90%;
+      text-align: center;
+    }
+    h1 { font-size: 24px; margin-bottom: 8px; }
+    .subtitle { color: #7f8c8d; margin-bottom: 24px; }
+    .key-box {
+      background: #f8f9fa;
+      border: 2px dashed #e67e22;
+      border-radius: 8px;
+      padding: 16px;
+      margin: 20px 0;
+      font-family: monospace;
+      font-size: 22px;
+      letter-spacing: 2px;
+      font-weight: 700;
+      color: #e67e22;
+      cursor: pointer;
+      transition: background 0.15s;
+      user-select: all;
+    }
+    .key-box:hover { background: #fef5e7; }
+    .copy-hint {
+      font-size: 12px;
+      color: #95a5a6;
+      margin-bottom: 20px;
+    }
+    .warning {
+      background: #fdf2e9;
+      border-left: 4px solid #e67e22;
+      padding: 12px 16px;
+      text-align: left;
+      border-radius: 4px;
+      margin: 20px 0;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .warning strong { color: #e67e22; }
+    .steps {
+      text-align: left;
+      margin: 20px 0;
+      padding: 0 12px;
+    }
+    .steps li {
+      margin-bottom: 8px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .steps code {
+      background: #ecf0f1;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 13px;
+    }
+    .loading { color: #95a5a6; font-size: 16px; }
+    .error { color: #e74c3c; }
+    .btn {
+      display: inline-block;
+      padding: 10px 24px;
+      background: #e67e22;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      margin-top: 8px;
+    }
+    .btn:hover { background: #d35400; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div id="loading" class="loading">Retrieving your license key...</div>
+
+    <div id="success" style="display: none">
+      <h1>Sync Activated!</h1>
+      <p class="subtitle">Your Sideload Spanish sync subscription is active.</p>
+
+      <div class="key-box" id="keyDisplay" title="Click to copy">—</div>
+      <p class="copy-hint" id="copyHint">Click to copy</p>
+
+      <div class="warning">
+        <strong>Save this key!</strong> This is the only time it will be shown.
+        We cannot recover it for you. Write it down or save it somewhere safe.
+      </div>
+
+      <h3 style="margin-bottom: 8px; font-size: 14px;">Next steps:</h3>
+      <ol class="steps">
+        <li>Open the Sideload Spanish extension popup</li>
+        <li>Scroll to the <strong>Sync</strong> section</li>
+        <li>Paste your key: <code id="keyCode">—</code></li>
+        <li>Set a 4-digit PIN (write this down too!)</li>
+        <li>Your words will sync across devices</li>
+      </ol>
+    </div>
+
+    <div id="error" style="display: none">
+      <h1 class="error">Something went wrong</h1>
+      <p class="subtitle" id="errorMessage">Could not retrieve your license key.</p>
+      <p style="margin-top: 12px; font-size: 14px;">
+        If you just completed payment, try refreshing this page in a few seconds.
+        The key generation may still be processing.
+      </p>
+      <button class="btn" onclick="location.reload()">Try Again</button>
+    </div>
+  </div>
+
+  <script>
+    (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('token');
+
+      const loadingEl = document.getElementById('loading');
+      const successEl = document.getElementById('success');
+      const errorEl = document.getElementById('error');
+      const keyDisplay = document.getElementById('keyDisplay');
+      const keyCode = document.getElementById('keyCode');
+      const copyHint = document.getElementById('copyHint');
+      const errorMessage = document.getElementById('errorMessage');
+
+      if (!token) {
+        loadingEl.style.display = 'none';
+        errorEl.style.display = '';
+        errorMessage.textContent = 'No claim token found in URL. Did you arrive here from a payment?';
+        return;
+      }
+
+      // Poll for the key (webhook may not have fired yet)
+      let attempts = 0;
+      const maxAttempts = 10;
+      const delay = 2000;
+
+      while (attempts < maxAttempts) {
+        try {
+          const res = await fetch(`/claim?token=${encodeURIComponent(token)}`);
+          if (res.ok) {
+            const data = await res.json();
+            loadingEl.style.display = 'none';
+            successEl.style.display = '';
+            keyDisplay.textContent = data.license_key;
+            keyCode.textContent = data.license_key;
+
+            // Copy on click
+            keyDisplay.addEventListener('click', async () => {
+              try {
+                await navigator.clipboard.writeText(data.license_key);
+                copyHint.textContent = 'Copied!';
+                setTimeout(() => { copyHint.textContent = 'Click to copy'; }, 2000);
+              } catch {
+                // Fallback: select all text
+              }
+            });
+
+            return;
+          }
+        } catch {}
+
+        attempts++;
+        if (attempts < maxAttempts) {
+          loadingEl.textContent = `Retrieving your license key... (attempt ${attempts + 1})`;
+          await new Promise(r => setTimeout(r, delay));
+        }
+      }
+
+      // All attempts failed
+      loadingEl.style.display = 'none';
+      errorEl.style.display = '';
+    })();
+  </script>
+</body>
+</html>
