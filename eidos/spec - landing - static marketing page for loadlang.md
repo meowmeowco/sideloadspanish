@@ -104,8 +104,8 @@ Served from GitHub Pages via `gh-pages` branch or `/docs` directory on main.
 
 ## Mapping
 
-> [[site/index.html]]
-> [[site/CNAME]]
+> [[docs/index.html]]
+> [[docs/CNAME]]
 
 ## Future
 
