@@ -1,0 +1,33 @@
+name: Setup Cloudflare DNS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  dns:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get zone ID
+        id: zone
+        run: |
+          ZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=loadlang.com" \
+            -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_DNS_TOKEN }}" \
+            | jq -r '.result[0].id')
+          echo "id=$ZONE_ID" >> "$GITHUB_OUTPUT"
+          echo "Zone ID: $ZONE_ID"
+
+      - name: Add root CNAME
+        run: |
+          curl -s -X POST "https://api.cloudflare.com/client/v4/zones/${{ steps.zone.outputs.id }}/dns_records" \
+            -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_DNS_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"type":"CNAME","name":"loadlang.com","content":"meowmeowco.github.io","proxied":false}' \
+            | jq '.success, .errors'
+
+      - name: Add www CNAME
+        run: |
+          curl -s -X POST "https://api.cloudflare.com/client/v4/zones/${{ steps.zone.outputs.id }}/dns_records" \
+            -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_DNS_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"type":"CNAME","name":"www","content":"meowmeowco.github.io","proxied":false}' \
+            | jq '.success, .errors'
