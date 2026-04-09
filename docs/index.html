@@ -136,10 +136,10 @@
     }
     .btn--orange:hover { background: var(--orange-dark); }
 
-    /* ── Replaced words (demo) — matches extension content/styles.css ── */
+    /* ── Replaced words (demo) — exact match of extension content/styles.css ── */
 
     .sl-word {
-      border-bottom: 2px dotted var(--orange);
+      border-bottom: 2px dotted #e67e22;
       color: inherit;
       cursor: help;
       position: relative;
@@ -151,26 +151,27 @@
     }
 
     .sl-tooltip {
-      position: absolute;
-      z-index: 10;
-      background: var(--navy);
+      position: fixed;
+      z-index: 2147483647;
+      background: #2c3e50;
       color: #ecf0f1;
       border-radius: 6px;
       padding: 8px 12px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       font-size: 13px;
       line-height: 1.4;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
       pointer-events: none;
+      max-width: 260px;
       white-space: nowrap;
       opacity: 0;
       transform: translateY(4px);
       transition: opacity 0.15s ease, transform 0.15s ease;
-      top: calc(100% + 6px);
-      left: 50%;
-      margin-left: -60px;
+      display: none;
     }
 
-    .sl-word:hover .sl-tooltip {
+    .sl-tooltip--visible {
+      display: block;
       opacity: 1;
       transform: translateY(0);
     }
@@ -181,15 +182,26 @@
       color: #fff;
     }
 
+    .sl-tooltip__translation {
+      color: #e67e22;
+      margin-top: 2px;
+    }
+
+    .sl-tooltip__gender {
+      font-size: 11px;
+      color: #9b59b6;
+      margin-top: 2px;
+    }
+
     .sl-tooltip__tier {
       font-size: 11px;
-      color: var(--light-grey);
-      margin-top: 2px;
+      color: #95a5a6;
+      margin-top: 4px;
     }
 
     .sl-tooltip__action {
       font-size: 11px;
-      color: var(--green);
+      color: #27ae60;
       margin-top: 4px;
       font-style: italic;
     }
@@ -371,17 +383,19 @@
   <section class="hero">
     <div class="container">
       <h1>
-        Learn <span class="sl-word">espa&ntilde;ol<span class="sl-tooltip"><span class="sl-tooltip__original">Spanish</span><br><span class="sl-tooltip__tier">Tier 1 &middot; A1</span><br><span class="sl-tooltip__action">Click to mark as known</span></span></span>
+        Learn <span class="sl-word" data-original="Spanish" data-es="espa&ntilde;ol" data-tier="1">espa&ntilde;ol</span>
         while you browse
       </h1>
       <p>
         A browser extension that quietly replaces
-        <span class="sl-word">palabras<span class="sl-tooltip"><span class="sl-tooltip__original">words</span><br><span class="sl-tooltip__tier">Tier 1 &middot; A1</span><br><span class="sl-tooltip__action">Click to mark as known</span></span></span>
+        <span class="sl-word" data-original="words" data-es="palabras" data-tier="1">palabras</span>
         on every page you read. No flashcards, no schedule, no
-        <span class="sl-word">esfuerzo<span class="sl-tooltip"><span class="sl-tooltip__original">effort</span><br><span class="sl-tooltip__tier">Tier 2 &middot; A2</span><br><span class="sl-tooltip__action">Click to mark as known</span></span></span>.
+        <span class="sl-word" data-original="effort" data-es="esfuerzo" data-tier="2">esfuerzo</span>.
         Just read the
-        <span class="sl-word">internet<span class="sl-tooltip"><span class="sl-tooltip__original">internet</span><br><span class="sl-tooltip__tier">Tier 1 &middot; A1</span><br><span class="sl-tooltip__action">Click to mark as known</span></span></span>
-        and pick up Spanish along the way.
+        <span class="sl-word" data-original="web" data-es="web" data-tier="1">web</span>
+        and pick up
+        <span class="sl-word" data-original="Spanish" data-es="espa&ntilde;ol" data-tier="1" data-gender="m">espa&ntilde;ol</span>
+        along the way.
       </p>
       <div class="hero-ctas">
         <a href="#install" class="btn btn--green">Install Free</a>
@@ -496,6 +510,90 @@
       </p>
     </div>
   </footer>
+
+  <script>
+    // Tooltip — matches extension tooltip.js behavior exactly
+    (() => {
+      const TIER_LABELS = {
+        1: 'A1 \u2014 Beginner',
+        2: 'A2 \u2014 Elementary',
+        3: 'B1 \u2014 Intermediate',
+        4: 'B2 \u2014 Upper Intermediate',
+        5: 'C1 \u2014 Advanced',
+      };
+
+      const tip = document.createElement('div');
+      tip.className = 'sl-tooltip';
+      tip.setAttribute('role', 'tooltip');
+      document.body.appendChild(tip);
+
+      function show(target) {
+        const original = target.dataset.original;
+        const es = target.dataset.es;
+        const tier = parseInt(target.dataset.tier, 10);
+        const gender = target.dataset.gender;
+
+        tip.innerHTML = '';
+
+        const origEl = document.createElement('div');
+        origEl.className = 'sl-tooltip__original';
+        origEl.textContent = original;
+        tip.appendChild(origEl);
+
+        const transEl = document.createElement('div');
+        transEl.className = 'sl-tooltip__translation';
+        transEl.textContent = '\u2192 ' + es;
+        tip.appendChild(transEl);
+
+        if (gender) {
+          const genderEl = document.createElement('div');
+          genderEl.className = 'sl-tooltip__gender';
+          genderEl.textContent = gender === 'f' ? '\u2640 feminine' : '\u2642 masculine';
+          tip.appendChild(genderEl);
+        }
+
+        const tierEl = document.createElement('div');
+        tierEl.className = 'sl-tooltip__tier';
+        tierEl.textContent = TIER_LABELS[tier] || 'Tier ' + tier;
+        tip.appendChild(tierEl);
+
+        const actionEl = document.createElement('div');
+        actionEl.className = 'sl-tooltip__action';
+        actionEl.textContent = 'Click to mark as known';
+        tip.appendChild(actionEl);
+
+        tip.classList.add('sl-tooltip--visible');
+
+        requestAnimationFrame(() => {
+          const rect = target.getBoundingClientRect();
+          const tipRect = tip.getBoundingClientRect();
+
+          let top = rect.top - tipRect.height - 8;
+          let left = rect.left + (rect.width - tipRect.width) / 2;
+
+          if (top < 4) top = rect.bottom + 8;
+          left = Math.max(4, Math.min(left, window.innerWidth - tipRect.width - 4));
+
+          tip.style.top = top + 'px';
+          tip.style.left = left + 'px';
+        });
+      }
+
+      function hide() {
+        tip.classList.remove('sl-tooltip--visible');
+      }
+
+      document.addEventListener('mouseover', (e) => {
+        const word = e.target.closest('.sl-word');
+        if (word) show(word);
+      });
+
+      document.addEventListener('mouseout', (e) => {
+        const word = e.target.closest('.sl-word');
+        if (word) hide();
+      });
+    })();
+  </script>
 
 </body>
 </html>
