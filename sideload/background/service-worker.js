@@ -121,6 +121,14 @@ function ensureProjections() {
   return _projectionsReady || rebuildProjections();
 }
 
+// ── Sync state ──
+
+let _syncCounter = 0;          // markKnown calls since last sync
+const SYNC_BATCH_SIZE = 10;    // sync after this many markKnown calls
+const SYNC_DEBOUNCE_MS = 60000; // minimum 60s between syncs
+let _lastSyncTime = 0;
+let _syncInProgress = false;
+
 // ── Commands (write) ──
 
 const Commands = {
@@ -145,6 +153,13 @@ const Commands = {
       _progress.known++;
       _progress.tiers[tier].known++;
       _knownSet.add(key);
+
+      // Trigger batched sync
+      _syncCounter++;
+      if (_syncCounter >= SYNC_BATCH_SIZE) {
+        _syncCounter = 0;
+        triggerSync('batch');
+      }
     }
   },
 
@@ -280,5 +295,219 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return false;
   }
 
+  if (message.type === 'SYNC') {
+    (async () => {
+      try {
+        const result = await performSync(message.reason || 'manual');
+        sendResponse({ data: result });
+      } catch (err) {
+        console.error('[Sideload SW] Sync error:', err);
+        sendResponse({ error: err.message });
+      }
+    })();
+    return true;
+  }
+
+  if (message.type === 'GET_SYNC_STATUS') {
+    sendResponse({
+      data: {
+        lastSyncTime: _lastSyncTime,
+        syncInProgress: _syncInProgress,
+      },
+    });
+    return false;
+  }
+
   return false;
+});
+
+// ── Sync engine ──
+
+const SYNC_API = 'http://127.0.0.1:3000';
+
+/**
+ * Trigger a sync if conditions are met (debounce, not already in progress).
+ * @param {string} reason - 'startup' | 'batch' | 'manual'
+ */
+function triggerSync(reason) {
+  if (_syncInProgress) return;
+  if (reason !== 'manual' && Date.now() - _lastSyncTime < SYNC_DEBOUNCE_MS) return;
+
+  // Check if sync is configured
+  chrome.storage.local.get(['syncLicenseKey', 'syncPin', 'syncAccountId'], (items) => {
+    if (!items.syncLicenseKey || !items.syncPin || !items.syncAccountId) return;
+    performSync(reason).catch((err) => {
+      console.error(`[Sideload SW] Background sync (${reason}) failed:`, err.message);
+    });
+  });
+}
+
+/**
+ * Execute a full sync cycle: export words → pull → merge → push → import merged.
+ * @param {string} reason
+ * @returns {Promise<{ merged: number, reason: string }>}
+ */
+async function performSync(reason) {
+  if (_syncInProgress) throw new Error('Sync already in progress');
+  _syncInProgress = true;
+
+  try {
+    // Get sync credentials from chrome.storage.local
+    const config = await new Promise((resolve) => {
+      chrome.storage.local.get(['syncLicenseKey', 'syncPin', 'syncAccountId'], resolve);
+    });
+
+    if (!config.syncLicenseKey || !config.syncPin || !config.syncAccountId) {
+      throw new Error('Sync not configured');
+    }
+
+    // Export all word records from IDB
+    await ensureProjections();
+    const allRecords = await tx(WORDS_STORE, 'readonly', (s) => s.getAll());
+    const localWords = (allRecords || []).map((r) => ({
+      en: r.en,
+      known: r.known,
+      clicked_known: r.clicked_known,
+      seen: r.seen,
+      tier: r.tier,
+      gender: r.gender,
+    }));
+
+    // Derive encryption key
+    const cryptoKey = await deriveSyncKey(config.syncLicenseKey, config.syncPin, config.syncAccountId);
+
+    // Pull remote blob
+    const remoteBlob = await syncPull(config.syncLicenseKey);
+
+    let merged;
+    if (remoteBlob) {
+      const remotePlain = await syncDecrypt(remoteBlob, cryptoKey);
+      const remoteData = JSON.parse(remotePlain);
+      const remoteWords = remoteData.words || [];
+      merged = syncMergeWordSets(localWords, remoteWords);
+    } else {
+      merged = localWords;
+    }
+
+    // Encrypt and push
+    const payload = JSON.stringify({ words: merged, version: 2 });
+    const encryptedBlob = await syncEncrypt(payload, cryptoKey);
+    await syncPush(config.syncLicenseKey, encryptedBlob);
+
+    // Import merged records into IDB
+    await importMergedRecords(merged);
+
+    _lastSyncTime = Date.now();
+    console.log(`[Sideload SW] Sync complete (${reason}): ${merged.length} words`);
+
+    return { merged: merged.length, reason };
+  } finally {
+    _syncInProgress = false;
+  }
+}
+
+/**
+ * Import merged word records into IDB and rebuild projections.
+ * @param {Array} mergedRecords
+ */
+async function importMergedRecords(mergedRecords) {
+  for (const record of mergedRecords) {
+    await tx(WORDS_STORE, 'readwrite', (s) => s.put(record));
+  }
+  await rebuildProjections();
+}
+
+// ── Inline sync helpers (no module imports in service worker) ──
+
+// Crypto: PBKDF2 + AES-256-GCM
+async function deriveSyncKey(licenseKey, pin, accountId) {
+  const encoder = new TextEncoder();
+  const password = encoder.encode(licenseKey + pin);
+  const salt = encoder.encode(accountId);
+  const keyMaterial = await crypto.subtle.importKey('raw', password, 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt'],
+  );
+}
+
+async function syncEncrypt(plaintext, key) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const encoded = new TextEncoder().encode(plaintext);
+  const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded);
+  return { iv: uint8ToB64(iv), ciphertext: uint8ToB64(new Uint8Array(encrypted)) };
+}
+
+async function syncDecrypt(blob, key) {
+  const iv = b64ToUint8(blob.iv);
+  const ciphertext = b64ToUint8(blob.ciphertext);
+  const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+  return new TextDecoder().decode(decrypted);
+}
+
+function uint8ToB64(bytes) {
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
+function b64ToUint8(b64) {
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+// Merge: G-Set CRDT
+function syncMergeWordSets(localRecords, remoteRecords) {
+  const merged = new Map();
+  for (const r of localRecords) merged.set(r.en, { ...r });
+  for (const remote of remoteRecords) {
+    const local = merged.get(remote.en);
+    if (!local) { merged.set(remote.en, { ...remote }); continue; }
+    merged.set(remote.en, {
+      en: local.en,
+      known: local.known || remote.known,
+      clicked_known: Math.max(local.clicked_known, remote.clicked_known),
+      seen: Math.max(local.seen, remote.seen),
+      tier: Math.min(local.tier, remote.tier),
+      gender: local.gender || remote.gender,
+    });
+  }
+  return [...merged.values()];
+}
+
+// HTTP helpers
+async function syncPull(licenseKey) {
+  const res = await fetch(`${SYNC_API}/sync`, {
+    headers: { 'Authorization': `Bearer ${licenseKey}`, 'Content-Type': 'application/json' },
+  });
+  if (res.status === 401) throw new Error('INVALID_KEY');
+  if (res.status === 403) throw new Error('EXPIRED');
+  if (!res.ok) throw new Error(`Sync pull failed: ${res.status}`);
+  const body = await res.json();
+  return body.data;
+}
+
+async function syncPush(licenseKey, blob) {
+  const res = await fetch(`${SYNC_API}/sync`, {
+    method: 'PUT',
+    headers: { 'Authorization': `Bearer ${licenseKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(blob),
+  });
+  if (res.status === 401) throw new Error('INVALID_KEY');
+  if (res.status === 403) throw new Error('EXPIRED');
+  if (!res.ok) throw new Error(`Sync push failed: ${res.status}`);
+  return res.json();
+}
+
+// ── Startup sync ──
+
+chrome.storage.local.get(['syncLicenseKey'], (items) => {
+  if (items.syncLicenseKey) {
+    triggerSync('startup');
+  }
 });

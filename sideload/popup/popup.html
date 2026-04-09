@@ -45,6 +45,50 @@
       <div id="strugglingList"></div>
     </section>
 
+    <!-- Sync -->
+    <section class="section" id="syncSection">
+      <h2 class="section-title">Sync</h2>
+
+      <div id="syncSetup">
+        <div class="setting">
+          <label for="licenseKeyInput">License Key</label>
+          <div class="input-row">
+            <input type="text" id="licenseKeyInput" placeholder="SL-XXXX-XXXX-XXXX" spellcheck="false">
+            <button id="validateKeyBtn" class="btn btn--small">Activate</button>
+          </div>
+          <p class="setting-hint" id="keyStatus"></p>
+        </div>
+
+        <div class="setting" id="pinSetupGroup" style="display: none">
+          <label for="pinInput">4-Digit PIN</label>
+          <div class="input-row">
+            <input type="password" id="pinInput" maxlength="4" pattern="[0-9]{4}" placeholder="1234" inputmode="numeric">
+            <button id="savePinBtn" class="btn btn--small">Set PIN</button>
+          </div>
+          <p class="setting-hint">Write this down. We cannot recover your data without it.</p>
+        </div>
+      </div>
+
+      <div id="syncActive" style="display: none">
+        <div class="sync-reminder">
+          Save your key! We cannot recover it for you.
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Status</span>
+          <span class="stat-value" id="syncStatus">Not synced</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Your Key</span>
+          <span class="stat-value sync-key" id="syncKeyDisplay">—</span>
+        </div>
+        <div class="sync-actions">
+          <button id="syncNowBtn" class="btn btn--small">Sync Now</button>
+          <button id="resetPinBtn" class="btn btn--tiny btn--muted">Reset PIN</button>
+          <button id="disconnectSyncBtn" class="btn btn--tiny btn--muted">Disconnect</button>
+        </div>
+      </div>
+    </section>
+
     <!-- Settings -->
     <section class="section">
       <h2 class="section-title">Settings</h2>

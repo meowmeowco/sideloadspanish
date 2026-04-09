@@ -234,9 +234,222 @@ document.addEventListener('DOMContentLoaded', async () => {
     broadcastSettings();
   });
 
+  // ── Sync UI ──
+
+  const licenseKeyInput = document.getElementById('licenseKeyInput');
+  const validateKeyBtn = document.getElementById('validateKeyBtn');
+  const keyStatus = document.getElementById('keyStatus');
+  const pinSetupGroup = document.getElementById('pinSetupGroup');
+  const pinInput = document.getElementById('pinInput');
+  const savePinBtn = document.getElementById('savePinBtn');
+  const syncSetup = document.getElementById('syncSetup');
+  const syncActive = document.getElementById('syncActive');
+  const syncStatus = document.getElementById('syncStatus');
+  const syncKeyDisplay = document.getElementById('syncKeyDisplay');
+  const syncNowBtn = document.getElementById('syncNowBtn');
+  const disconnectSyncBtn = document.getElementById('disconnectSyncBtn');
+
+  const SYNC_API = 'http://127.0.0.1:3000';
+
+  async function loadSyncState() {
+    const items = await new Promise((resolve) => {
+      chrome.storage.local.get(['syncLicenseKey', 'syncPin', 'syncAccountId'], resolve);
+    });
+
+    if (items.syncLicenseKey && items.syncPin && items.syncAccountId) {
+      showSyncActive(items.syncLicenseKey);
+      updateSyncStatus();
+    } else if (items.syncLicenseKey && items.syncAccountId && !items.syncPin) {
+      // Key validated but PIN not set yet
+      licenseKeyInput.value = items.syncLicenseKey;
+      pinSetupGroup.style.display = '';
+      keyStatus.textContent = 'Key valid — set your PIN to activate sync';
+      keyStatus.className = 'setting-hint key-status--ok';
+    }
+  }
+
+  function showSyncActive(key) {
+    syncSetup.style.display = 'none';
+    syncActive.style.display = '';
+    // Show last 4 chars, mask the rest
+    syncKeyDisplay.textContent = key;
+    syncKeyDisplay.title = 'Click to copy';
+  }
+
+  function showSyncSetup() {
+    syncSetup.style.display = '';
+    syncActive.style.display = 'none';
+    licenseKeyInput.value = '';
+    pinInput.value = '';
+    pinSetupGroup.style.display = 'none';
+    keyStatus.textContent = '';
+  }
+
+  async function updateSyncStatus() {
+    try {
+      const response = await new Promise((resolve) => {
+        chrome.runtime.sendMessage({ type: 'GET_SYNC_STATUS' }, resolve);
+      });
+      if (response?.data) {
+        const { lastSyncTime, syncInProgress } = response.data;
+        if (syncInProgress) {
+          syncStatus.textContent = 'Syncing...';
+        } else if (lastSyncTime > 0) {
+          const ago = Math.round((Date.now() - lastSyncTime) / 1000);
+          if (ago < 60) syncStatus.textContent = 'Just synced';
+          else if (ago < 3600) syncStatus.textContent = `${Math.round(ago / 60)}m ago`;
+          else syncStatus.textContent = `${Math.round(ago / 3600)}h ago`;
+        } else {
+          syncStatus.textContent = 'Not synced yet';
+        }
+      }
+    } catch {
+      syncStatus.textContent = 'Unknown';
+    }
+  }
+
+  // Validate key
+  validateKeyBtn.addEventListener('click', async () => {
+    const key = licenseKeyInput.value.trim().toUpperCase();
+    if (!key) return;
+
+    validateKeyBtn.disabled = true;
+    validateKeyBtn.textContent = '...';
+    keyStatus.textContent = '';
+
+    try {
+      const res = await fetch(`${SYNC_API}/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key }),
+      });
+      const data = await res.json();
+
+      if (data.valid && data.active) {
+        // Store key + account_id, prompt for PIN
+        await new Promise((resolve) => {
+          chrome.storage.local.set({
+            syncLicenseKey: key,
+            syncAccountId: data.account_id,
+          }, resolve);
+        });
+        keyStatus.textContent = 'Key valid! Set your PIN below.';
+        keyStatus.className = 'setting-hint key-status--ok';
+        pinSetupGroup.style.display = '';
+      } else if (data.valid && !data.active) {
+        keyStatus.textContent = 'Subscription expired';
+        keyStatus.className = 'setting-hint key-status--error';
+      } else {
+        keyStatus.textContent = data.error || 'Invalid key';
+        keyStatus.className = 'setting-hint key-status--error';
+      }
+    } catch (err) {
+      keyStatus.textContent = 'Connection failed — is the sync server running?';
+      keyStatus.className = 'setting-hint key-status--error';
+    } finally {
+      validateKeyBtn.disabled = false;
+      validateKeyBtn.textContent = 'Activate';
+    }
+  });
+
+  // Save PIN + activate sync
+  savePinBtn.addEventListener('click', async () => {
+    const pin = pinInput.value.trim();
+    if (!/^\d{4}$/.test(pin)) {
+      pinInput.focus();
+      return;
+    }
+
+    await new Promise((resolve) => {
+      chrome.storage.local.set({ syncPin: pin }, resolve);
+    });
+
+    const items = await new Promise((resolve) => {
+      chrome.storage.local.get(['syncLicenseKey'], resolve);
+    });
+
+    showSyncActive(items.syncLicenseKey);
+
+    // Trigger first sync
+    chrome.runtime.sendMessage({ type: 'SYNC', reason: 'manual' }, (response) => {
+      if (response?.data) {
+        updateSyncStatus();
+        renderProgress();
+      }
+    });
+  });
+
+  // Sync Now
+  syncNowBtn.addEventListener('click', async () => {
+    syncNowBtn.disabled = true;
+    syncNowBtn.textContent = 'Syncing...';
+    syncStatus.textContent = 'Syncing...';
+
+    chrome.runtime.sendMessage({ type: 'SYNC', reason: 'manual' }, (response) => {
+      syncNowBtn.disabled = false;
+      syncNowBtn.textContent = 'Sync Now';
+
+      if (response?.error) {
+        if (response.error === 'EXPIRED') {
+          syncStatus.textContent = 'Subscription expired';
+          syncNowBtn.textContent = 'Renew';
+          syncNowBtn.onclick = () => { window.open('https://sideloadspanish.com/renew', '_blank'); };
+        } else if (response.error === 'INVALID_KEY') {
+          syncStatus.textContent = 'Key invalid — re-enter your key';
+          showSyncSetup();
+        } else {
+          syncStatus.textContent = `Error: ${response.error}`;
+        }
+      } else {
+        updateSyncStatus();
+        renderProgress();
+      }
+    });
+  });
+
+  // Copy key on click
+  syncKeyDisplay.addEventListener('click', () => {
+    navigator.clipboard.writeText(syncKeyDisplay.textContent).then(() => {
+      const original = syncKeyDisplay.textContent;
+      syncKeyDisplay.textContent = 'Copied!';
+      setTimeout(() => { syncKeyDisplay.textContent = original; }, 1500);
+    });
+  });
+
+  // Reset PIN
+  const resetPinBtn = document.getElementById('resetPinBtn');
+  resetPinBtn.addEventListener('click', async () => {
+    const newPin = prompt('Enter new 4-digit PIN.\n\nWarning: this will replace your sync data with your current local data. The old encrypted data on the server will be overwritten.');
+    if (!newPin || !/^\d{4}$/.test(newPin.trim())) return;
+
+    await new Promise((resolve) => {
+      chrome.storage.local.set({ syncPin: newPin.trim() }, resolve);
+    });
+
+    syncStatus.textContent = 'Re-encrypting...';
+    chrome.runtime.sendMessage({ type: 'SYNC', reason: 'manual' }, (response) => {
+      if (response?.error) {
+        syncStatus.textContent = `Error: ${response.error}`;
+      } else {
+        syncStatus.textContent = 'PIN updated, data re-synced';
+        setTimeout(updateSyncStatus, 2000);
+      }
+    });
+  });
+
+  // Disconnect
+  disconnectSyncBtn.addEventListener('click', async () => {
+    if (!confirm('Disconnect sync? Your local data will be kept.')) return;
+    await new Promise((resolve) => {
+      chrome.storage.local.remove(['syncLicenseKey', 'syncPin', 'syncAccountId'], resolve);
+    });
+    showSyncSetup();
+  });
+
   // ── Init ──
   await SideloadStorage.open();
   await renderProgress();
   await renderStruggling();
   await loadSettings();
+  await loadSyncState();
 });
