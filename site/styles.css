@@ -1,0 +1,343 @@
+/* ============================================================
+   Custom properties
+   ============================================================ */
+:root {
+  --color-bg: #fafafa;
+  --color-text: #1a1a1a;
+  --color-text-secondary: #555;
+  --color-accent: #2563eb;
+  --color-accent-hover: #1d4ed8;
+  --color-surface: #ffffff;
+  --color-border: #e5e5e5;
+  --font-sans: system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, monospace;
+  --space-xs: 0.5rem;
+  --space-sm: 1rem;
+  --space-md: 2rem;
+  --space-lg: 4rem;
+  --space-xl: 6rem;
+  --max-width: 960px;
+  --radius: 8px;
+}
+
+/* ============================================================
+   Base reset & body
+   ============================================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  line-height: 1.6;
+}
+
+/* ============================================================
+   Accessibility: focus-visible
+   ============================================================ */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   Layout helpers
+   ============================================================ */
+header,
+section,
+footer {
+  width: 100%;
+  max-width: var(--max-width);
+  margin-inline: auto;
+  padding-inline: var(--space-sm);
+}
+
+header {
+  padding-block: var(--space-sm);
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+}
+
+section {
+  padding-block: var(--space-lg);
+}
+
+footer {
+  padding-block: var(--space-md);
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+/* ============================================================
+   Site logo
+   ============================================================ */
+.site-logo {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.01em;
+}
+
+/* ============================================================
+   Typography
+   ============================================================ */
+h1 {
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  line-height: 1.2;
+  margin-bottom: var(--space-sm);
+}
+
+h2 {
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+  line-height: 1.3;
+  margin-bottom: var(--space-sm);
+}
+
+h3 {
+  font-size: 1.1rem;
+  margin-bottom: var(--space-xs);
+}
+
+p {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-sm);
+}
+
+p:last-child {
+  margin-bottom: 0;
+}
+
+ul {
+  padding-left: var(--space-md);
+  color: var(--color-text-secondary);
+}
+
+li {
+  margin-bottom: var(--space-xs);
+}
+
+a {
+  color: var(--color-accent);
+}
+
+a:hover {
+  color: var(--color-accent-hover);
+}
+
+/* ============================================================
+   CTA buttons
+   ============================================================ */
+.cta {
+  display: inline-block;
+  background-color: var(--color-accent);
+  color: #fff;
+  text-decoration: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 1rem;
+  transition: background-color 0.15s ease;
+  cursor: pointer;
+  border: none;
+}
+
+.cta:hover {
+  background-color: var(--color-accent-hover);
+  color: #fff;
+}
+
+.cta--install {
+  margin-top: var(--space-sm);
+}
+
+.cta--mobile-only {
+  display: none;
+}
+
+.cta--sync {
+  margin-top: var(--space-xs);
+}
+
+.cta[disabled],
+.cta--disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ============================================================
+   Hero section
+   ============================================================ */
+#hero {
+  text-align: center;
+}
+
+#hero p {
+  max-width: 600px;
+  margin-inline: auto;
+}
+
+.hero-video {
+  margin-top: var(--space-md);
+}
+
+.hero-video video {
+  width: 100%;
+  max-width: 720px;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+}
+
+/* ============================================================
+   How it works — panels (horizontal desktop, stacked mobile)
+   ============================================================ */
+.panels {
+  display: flex;
+  gap: var(--space-md);
+  margin-top: var(--space-sm);
+}
+
+.panel {
+  flex: 1;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-sm);
+}
+
+/* ============================================================
+   Sync section
+   ============================================================ */
+#sync {
+  scroll-margin-top: 2rem;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-md);
+}
+
+.sync-price {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: var(--space-xs);
+}
+
+/* ============================================================
+   Page layout (privacy, sync-success)
+   ============================================================ */
+.page {
+  max-width: var(--max-width);
+  margin-inline: auto;
+  padding: var(--space-lg) var(--space-sm);
+}
+
+.page--centered {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+}
+
+/* ============================================================
+   Feature list
+   ============================================================ */
+.feature-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.feature-list li {
+  padding: var(--space-xs) 0;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.feature-list li:last-child {
+  border-bottom: none;
+}
+
+/* ============================================================
+   Sync features
+   ============================================================ */
+.sync-features {
+  list-style: none;
+  padding-left: 0;
+  margin-bottom: var(--space-sm);
+}
+
+.sync-features li {
+  color: var(--color-text);
+}
+
+.sync-features li::before {
+  content: "· ";
+}
+
+/* ============================================================
+   Panel images
+   ============================================================ */
+.panel img {
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius);
+  margin-bottom: var(--space-xs);
+}
+
+/* ============================================================
+   Footer
+   ============================================================ */
+.footer-coming-soon {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+/* ============================================================
+   Responsive — 768px breakpoint
+   ============================================================ */
+@media (max-width: 768px) {
+  .panels {
+    flex-direction: column;
+  }
+
+  h1 {
+    font-size: 1.75rem;
+  }
+
+  section {
+    padding-block: var(--space-md);
+  }
+
+  .cta--install {
+    display: none;
+  }
+
+  .cta--mobile-only {
+    display: inline-block;
+  }
+}
+
+/* ============================================================
+   Reduced motion
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
