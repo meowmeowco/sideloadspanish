@@ -1,6 +1,6 @@
 ---
-tldr: Build Cloudflare Workers backend + Lemon Squeezy payments + E2E encrypted sync for cross-device word progress
-status: active
+tldr: Build Fermyon Spin backend + Lemon Squeezy payments + E2E encrypted sync for cross-device word progress
+status: completed
 ---
 
 # Plan: Implement Paid Sync with License Keys
@@ -131,9 +131,13 @@ From spec — all must pass:
 
 ## Adjustments
 
-(none yet)
+- Backend changed from Cloudflare Workers to Fermyon Spin (user decision, 2026-04-08)
+- Single KV store with key prefixes instead of named KV namespaces
+- No cron in Spin — grace period purge is lazy (on next auth request)
+- Added claim token flow for key delivery via thank-you page
 
 ## Progress Log
 
 - 2026-04-08 00:30 — Plan created. 6 phases covering backend, crypto, sync client, payments, key lifecycle, and polish.
 - 2026-04-08 02:03 — Session end. Plan created only, no implementation started. MVP published to Chrome Web Store and GitHub.
+- 2026-04-09 — All 6 phases implemented in single session. Backend: Fermyon Spin with TypeScript, itty-router, @spinframework/spin-kv. Client: Web Crypto API (PBKDF2 + AES-256-GCM), G-Set CRDT merge. 115 tests passing. 14/14 spec criteria verified. Spec status → verified.

@@ -1,6 +1,6 @@
 # spec - sync - mullvad-model paid sync with license keys
 
-status: draft
+status: verified
 
 ## Problem
 
@@ -171,20 +171,35 @@ Known-words is a G-Set (grow-only). Per-word records merge deterministically:
 
 ## Architecture
 
-### Backend: Cloudflare Workers + KV
+### Backend: Fermyon Spin + KV
 
 ```
 sync-worker/
+  spin.toml               # Spin manifest, KV store config, variables
   src/
-    index.js          # Worker entry: route /sync, /validate, /webhook
-    keys.js           # Key generation, validation, expiry checks
-    sync.js           # Blob storage: read/write encrypted payloads (no decryption, no merge)
-  wrangler.toml       # Cloudflare config
+    index.ts              # Router: itty-router AutoRouter
+    lib/
+      keys.ts             # Key generation (SL-XXXX-XXXX-XXXX), SHA-256 hashing
+      kv.ts               # Typed KV wrappers with prefix strategy
+      types.ts            # LicenseRecord, SyncBlob, EmailRecord, ClaimRecord
+    middleware/
+      auth.ts             # Bearer token auth, lazy grace period purge
+    routes/
+      sync.ts             # GET /sync, PUT /sync — blob CRUD
+      validate.ts         # POST /validate — key validity check
+      webhook.ts          # POST /webhook — Lemon Squeezy HMAC-verified
+      rotate.ts           # POST /rotate — key rotation (auth required)
+      recover.ts          # POST /recover — email-based key lookup
+      claim.ts            # GET /claim — one-time key retrieval after payment
+      admin.ts            # POST /admin/create-key — dev-only
+      pages.ts            # GET /thank-you — payment confirmation page
 ```
 
-**KV namespaces:**
-- `LICENSES` — key → `{ created, expires_at, active }` (hashed key as KV key)
-- `SYNC_DATA` — account_id → `{ iv, ciphertext, updated_at }` (opaque encrypted blob)
+**KV store:** single `"default"` store with key prefixes:
+- `license:{sha256_hex}` → `{ account_id, created, expires_at, active }`
+- `sync:{account_id}` → `{ iv, ciphertext, updated_at }` (opaque encrypted blob)
+- `email:{sha256_hex}` → `{ key_hashes: string[] }` (for recovery)
+- `claim:{token}` → `{ license_key, account_id, created }` (one-time use)
 
 **Endpoints:**
 | Method | Path | Purpose |
@@ -192,25 +207,32 @@ sync-worker/
 | GET | `/sync` | Return stored encrypted blob (authenticated) |
 | PUT | `/sync` | Overwrite stored encrypted blob (authenticated) |
 | POST | `/validate` | Check if a key is valid and active |
-| POST | `/webhook` | Lemon Squeezy payment webhook → create/extend key |
+| POST | `/webhook` | Lemon Squeezy payment webhook → create key |
+| POST | `/rotate` | Rotate key, same account (authenticated) |
+| POST | `/recover` | Look up keys by email hash |
+| GET | `/claim` | One-time key retrieval after payment |
+| GET | `/thank-you` | Payment confirmation page |
+
+**Deploy:** `spin cloud deploy` or `spin aka deploy`
 
 ### Extension Changes
 
-- Settings UI: license key input field + sync status indicator
-- Popup: "Last synced: 2 min ago" or "Sync: offline mode"
-- New `lib/sync.js`: sync client, batching logic, merge into local store
-- Service worker: periodic sync scheduling
+- `lib/crypto.js` — PBKDF2 + AES-256-GCM (Web Crypto API)
+- `lib/merge.js` — G-Set CRDT merge (union, OR/max/min)
+- `lib/sync.js` — sync client (validate, pull, push, syncFull)
+- Popup: license key input, PIN setup, sync status, manual sync, key reminder
+- Service worker: sync triggers (startup, batch/10 words, manual), 60s debounce
 
 ### Payment: Lemon Squeezy
 
 - Product: "Sideload Spanish Sync" — subscription, 5 EUR/month
 - No variants, no tiers, no annual option
-- Webhook on `subscription_created`, `subscription_updated`, `subscription_expired`
-- Webhook creates/extends key in KV, no other state needed
+- Webhook on `subscription_created`, `subscription_updated`, `subscription_expired`, `subscription_cancelled`, `subscription_resumed`
+- Webhook creates key + claim record; thank-you page retrieves key by claim token
 
 ## Interactions
 
-- **depends on**: Cloudflare Workers, Cloudflare KV, Lemon Squeezy
+- **depends on**: Fermyon Spin, Spin KV, Lemon Squeezy
 - **depends on**: [[spec - sideload - progressive in-page word replacement for language learning]] (core extension)
 - **extends**: service worker CQRS model — sync is a new command that triggers projection rebuild
 
