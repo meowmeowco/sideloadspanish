@@ -249,7 +249,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const syncNowBtn = document.getElementById('syncNowBtn');
   const disconnectSyncBtn = document.getElementById('disconnectSyncBtn');
 
-  const SYNC_API = 'http://127.0.0.1:3000';
+  const SYNC_API = 'https://sideload-sync-0sfsjx4d.fermyon.app';
 
   async function loadSyncState() {
     const items = await new Promise((resolve) => {

@@ -323,7 +323,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // ── Sync engine ──
 
-const SYNC_API = 'http://127.0.0.1:3000';
+const SYNC_API = 'https://sideload-sync-0sfsjx4d.fermyon.app';
 
 /**
  * Trigger a sync if conditions are met (debounce, not already in progress).
