@@ -3,10 +3,7 @@
   "name": "Sideload Spanish",
   "version": "0.1.2",
   "description": "Learn Spanish while browsing — words on pages are progressively replaced with Spanish translations based on your level.",
-  "permissions": [
-    "storage",
-    "tabs"
-  ],
+  "permissions": [],
   "host_permissions": [
     "http://127.0.0.1:3000/*"
   ],
