@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 1400px;
+      height: 560px;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    .tile {
+      width: 1400px;
+      height: 560px;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .tile::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 75% 35%, rgba(230,126,34,0.15) 0%, transparent 50%),
+                  radial-gradient(circle at 15% 75%, rgba(52,152,219,0.1) 0%, transparent 45%);
+    }
+    .left {
+      position: relative;
+      z-index: 1;
+      flex: 0 0 500px;
+      padding-left: 80px;
+    }
+    .icon {
+      width: 72px;
+      height: 72px;
+      background: #e67e22;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      font-weight: 800;
+      color: #1a1a2e;
+      letter-spacing: -1px;
+      margin-bottom: 24px;
+    }
+    .title {
+      font-size: 40px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -1px;
+      margin-bottom: 12px;
+      line-height: 1.15;
+    }
+    .subtitle {
+      font-size: 17px;
+      color: #95a5a6;
+      line-height: 1.5;
+      max-width: 380px;
+    }
+    /* Right side: simulated page with replacements */
+    .right {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding-right: 60px;
+    }
+    .page-mock {
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+      width: 680px;
+      padding: 36px 40px;
+      position: relative;
+    }
+    .page-mock h3 {
+      font-family: Georgia, serif;
+      font-size: 22px;
+      color: #1a1a1a;
+      margin-bottom: 16px;
+      line-height: 1.3;
+    }
+    .page-mock p {
+      font-family: Georgia, serif;
+      font-size: 15px;
+      color: #333;
+      line-height: 1.7;
+      margin-bottom: 12px;
+    }
+    .replaced {
+      border-bottom: 2px dotted #e67e22;
+      color: #1a1a1a;
+    }
+    .replaced-known {
+      border-bottom: 2px dotted #27ae60;
+      color: #1a1a1a;
+      opacity: 0.85;
+    }
+    /* Tooltip mock */
+    .tooltip-mock {
+      position: absolute;
+      top: 62px;
+      right: 80px;
+      background: #2c3e50;
+      color: #ecf0f1;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-family: -apple-system, sans-serif;
+      font-size: 12px;
+      line-height: 1.5;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      white-space: nowrap;
+    }
+    .tooltip-mock .tt-original {
+      font-weight: 600;
+      font-size: 13px;
+      color: #fff;
+    }
+    .tooltip-mock .tt-trans {
+      color: #e67e22;
+    }
+    .tooltip-mock .tt-gender {
+      color: #9b59b6;
+      font-size: 10px;
+    }
+    .tooltip-mock .tt-tier {
+      color: #95a5a6;
+      font-size: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="tile">
+    <div class="left">
+      <div class="icon">S</div>
+      <div class="title">Learn Spanish<br>While You Browse</div>
+      <div class="subtitle">Words on pages are replaced with Spanish translations that match your level. Hover to see the original. Click to mark as known.</div>
+    </div>
+    <div class="right">
+      <div class="page-mock">
+        <h3>A New Study Reveals <span class="replaced">el poder</span> of Daily Reading</h3>
+        <p><span class="replaced">La casa</span> of knowledge is built one <span class="replaced">libro</span> at a time. A new study from <span class="replaced">la ciudad</span> of Barcelona suggests that <span class="replaced-known">gente</span> who read for at least thirty minutes a <span class="replaced">d&iacute;a</span> show significant improvement.</p>
+        <p><span class="replaced">El agua</span> of inspiration flows through every page. Researchers found that <span class="replaced">el mundo</span> creates new connections when a <span class="replaced-known">persona</span> encounters unfamiliar <span class="replaced">palabras</span> in context.</p>
+        <div class="tooltip-mock">
+          <div class="tt-original">the house</div>
+          <div class="tt-trans">&rarr; la casa</div>
+          <div class="tt-gender">&female; feminine</div>
+          <div class="tt-tier">A1 &mdash; Beginner</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

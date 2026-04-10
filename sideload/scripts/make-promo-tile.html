@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 440px;
+      height: 280px;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    .tile {
+      width: 440px;
+      height: 280px;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    /* Subtle pattern overlay */
+    .tile::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 70% 30%, rgba(230,126,34,0.12) 0%, transparent 60%),
+                  radial-gradient(circle at 20% 80%, rgba(52,152,219,0.08) 0%, transparent 50%);
+    }
+    .content {
+      position: relative;
+      text-align: center;
+      z-index: 1;
+    }
+    .icon {
+      width: 56px;
+      height: 56px;
+      background: #e67e22;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      font-size: 28px;
+      font-weight: 800;
+      color: #1a1a2e;
+      letter-spacing: -1px;
+    }
+    .title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: #95a5a6;
+      max-width: 320px;
+      line-height: 1.4;
+    }
+    /* Demo replacement words floating */
+    .demo-words {
+      position: absolute;
+      bottom: 24px;
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      width: 100%;
+    }
+    .demo-word {
+      font-size: 13px;
+      color: #e67e22;
+      border-bottom: 2px dotted #e67e22;
+      padding: 2px 0;
+      font-family: Georgia, serif;
+    }
+    .demo-arrow {
+      font-size: 11px;
+      color: #555;
+    }
+    .demo-pair {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .demo-original {
+      font-size: 11px;
+      color: #666;
+      text-decoration: line-through;
+      font-family: Georgia, serif;
+    }
+  </style>
+</head>
+<body>
+  <div class="tile">
+    <div class="content">
+      <div class="icon">S</div>
+      <div class="title">Sideload Spanish</div>
+      <div class="subtitle">Learn Spanish while you browse. Words on pages are replaced with translations that match your level.</div>
+    </div>
+    <div class="demo-words">
+      <div class="demo-pair">
+        <span class="demo-original">the house</span>
+        <span class="demo-arrow">&rarr;</span>
+        <span class="demo-word">la casa</span>
+      </div>
+      <div class="demo-pair">
+        <span class="demo-original">the book</span>
+        <span class="demo-arrow">&rarr;</span>
+        <span class="demo-word">el libro</span>
+      </div>
+      <div class="demo-pair">
+        <span class="demo-original">time</span>
+        <span class="demo-arrow">&rarr;</span>
+        <span class="demo-word">tiempo</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
