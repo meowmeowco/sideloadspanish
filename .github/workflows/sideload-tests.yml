@@ -1,0 +1,55 @@
+name: Sideload Tests
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/sideload-tests.yml'
+      - 'sideload/**'
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/sideload-tests.yml'
+      - 'sideload/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sideload:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.52.0-noble
+    defaults:
+      run:
+        working-directory: sideload
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: sideload/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Run extension end-to-end tests
+        run: npm run test:e2e
+
+      - name: Upload Playwright artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sideload-playwright-artifacts
+          path: |
+            sideload/playwright-report
+            sideload/test-results
+          if-no-files-found: ignore

@@ -1,39 +1,45 @@
-# `http-ts` Template
+# Sync Worker
 
-A starter template for building TypeScript HTTP applications with Spin.
+Privacy-first sync backend for the Sideload Spanish browser extension.
 
-## Getting Started
+## Prerequisites
 
-Build the App
+- `npm install`
+- `spin` installed locally
 
-```bash
-spin build
-```
-
-## Run the App 
+## Commands
 
 ```bash
-spin up
+npm run build
+npm test
+npm run test:integration
+npm run test:all
 ```
 
-## Using Spin Interfaces
+- `npm test` runs the hermetic unit suite only.
+- `npm run test:integration` starts the worker with `spin up` and exercises the HTTP API on `127.0.0.1:3457`.
+- `npm run test:all` runs both suites.
 
-To use additional Spin interfaces, install the corresponding packages:
+## Running Locally
 
-| Interface     | Package                         |
-|---------------|---------------------------------|
-| Key-Value     | `@spinframework/spin-kv`        |
-| LLM           | `@spinframework/spin-llm`       |
-| MQTT          | `@spinframework/spin-mqtt`      |
-| MySQL         | `@spinframework/spin-mysql`     |
-| PostgreSQL    | `@spinframework/spin-postgres`  |
-| Redis         | `@spinframework/spin-redis`     |
-| SQLite        | `@spinframework/spin-sqlite`    |
-| Variables     | `@spinframework/spin-variables` |
+Set the required webhook secret, then start Spin:
 
-## Using the StarlingMonkey Debugger for VS Code
+```bash
+export SPIN_VARIABLE_LEMON_WEBHOOK_SECRET=dev-secret
+spin up --listen 127.0.0.1:3457
+```
 
-1. First install the [StarlingMonkey Debugger](https://marketplace.visualstudio.com/items?itemName=BytecodeAlliance.starlingmonkey-debugger) extension.
-2. Build the component using the debug command `npm run build:debug`.
-3. Uncomment `tcp://127.0.0.1:*` in the `allowed_outbound_hosts` field in the `spin.toml`.
-4. Start the debugger in VS Code which should start Spin and attach the debugger. The debugger needs to be restarted for each http call.
+Useful endpoints during local development:
+
+- `GET /sync`
+- `PUT /sync`
+- `POST /validate`
+- `POST /claim`
+- `POST /recover`
+- `POST /rotate`
+- `POST /webhook`
+- `POST /admin/create-key`
+
+## Notes
+
+Integration tests require a machine that can bind local ports. If `spin` is missing or local server startup is blocked by the environment, `npm run test:integration` will fail before any API assertions run.
