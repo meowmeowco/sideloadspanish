@@ -1,11 +1,12 @@
 /**
  * Playwright fixture that launches Chromium with the Sideload Spanish extension loaded.
- * MV3 extensions require a persistent context (not headless).
+ * MV3 extensions require a persistent context.
  */
 import { test as base, chromium } from '@playwright/test';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
+import { getExtensionLaunchOptions } from './runtime.js';
 
 const EXTENSION_PATH = path.resolve(import.meta.dirname, '..', '..');
 
@@ -14,15 +15,10 @@ export const test = base.extend({
   context: async ({}, use) => {
     const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sideload-test-'));
 
-    const context = await chromium.launchPersistentContext(userDataDir, {
-      headless: false,
-      args: [
-        `--disable-extensions-except=${EXTENSION_PATH}`,
-        `--load-extension=${EXTENSION_PATH}`,
-        '--no-first-run',
-        '--disable-default-apps',
-      ],
-    });
+    const context = await chromium.launchPersistentContext(
+      userDataDir,
+      getExtensionLaunchOptions(EXTENSION_PATH),
+    );
 
     await use(context);
     await context.close();

@@ -6,7 +6,8 @@
   "scripts": {
     "build": "node build.mjs && mkdirp dist && j2w -i build/bundle.js --initLocation http://sync-worker.localhost -o dist/sync-worker.wasm",
     "build:debug": "node build.mjs && mkdirp dist && j2w -d -i build/bundle.js --initLocation http://sync-worker.localhost -o dist/sync-worker.wasm",
-    "test": "vitest run",
+    "test": "npm run test:unit",
+    "test:all": "npm run test:unit && npm run test:integration",
     "test:unit": "vitest run test/unit",
     "test:integration": "vitest run test/integration"
   },

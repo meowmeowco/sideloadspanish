@@ -9,6 +9,7 @@ const WORKER_DIR = path.resolve(__dirname, '../..');
 const WEBHOOK_SECRET = 'integration-test-secret';
 
 let spinProcess: ChildProcess;
+let spinOutput = '';
 
 function json(data: unknown): string {
   return JSON.stringify(data);
@@ -27,6 +28,9 @@ async function hmacSign(body: string, secret: string): Promise<string> {
 async function waitForServer(url: string, maxWaitMs = 15000): Promise<void> {
   const start = Date.now();
   while (Date.now() - start < maxWaitMs) {
+    if (spinProcess.exitCode !== null) {
+      throw new Error(`Spin exited before the server became ready.\n\n${spinOutput.trim() || 'No process output captured.'}`);
+    }
     try {
       await fetch(url);
       return;
@@ -34,7 +38,11 @@ async function waitForServer(url: string, maxWaitMs = 15000): Promise<void> {
       await new Promise((r) => setTimeout(r, 300));
     }
   }
-  throw new Error(`Server did not start within ${maxWaitMs}ms`);
+  throw new Error(
+    `Server did not start within ${maxWaitMs}ms. ` +
+    'Check that `spin` is installed and that the environment permits binding to 127.0.0.1.\n\n' +
+    `${spinOutput.trim() || 'No process output captured.'}`,
+  );
 }
 
 beforeAll(async () => {
@@ -46,6 +54,17 @@ beforeAll(async () => {
       SPIN_VARIABLE_LEMON_WEBHOOK_SECRET: WEBHOOK_SECRET,
     },
   });
+
+  spinProcess.stdout?.on('data', (chunk) => {
+    spinOutput += chunk.toString();
+  });
+  spinProcess.stderr?.on('data', (chunk) => {
+    spinOutput += chunk.toString();
+  });
+  spinProcess.on('error', (error) => {
+    spinOutput += `${error.message}\n`;
+  });
+
   await waitForServer(`${BASE}/sync`);
 }, 30000);
 

@@ -1,14 +1,17 @@
 import { defineConfig } from '@playwright/test';
 import path from 'path';
+import { getExtensionLaunchOptions } from './test/e2e/runtime.js';
 
 const extensionPath = path.resolve(import.meta.dirname);
+const launchOptions = getExtensionLaunchOptions(extensionPath);
 
 export default defineConfig({
   testDir: './test/e2e',
   timeout: 30_000,
   retries: 0,
   use: {
-    headless: false, // Extensions require headed mode in Chromium
+    channel: launchOptions.channel,
+    headless: launchOptions.headless,
   },
   projects: [
     {
