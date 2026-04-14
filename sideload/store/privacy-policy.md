@@ -4,45 +4,37 @@
 
 ## What data we collect
 
-By default, none. Sideload Spanish does not collect, sell, or share personal data for analytics, advertising, or tracking.
+None. Sideload Spanish does not collect, transmit, or store any personal data.
 
 ## What stays on your device
 
-- Your learning progress (words known, seen counts) — stored in your browser's local storage
+- Your learning progress (words known, seen counts) — stored in your browser's local IndexedDB
 - Your settings (density, blacklist, toggle state) — stored locally
 - The vocabulary list — bundled with the extension
 
-## Optional sync
+## What we never access
 
-If you enable the paid Sync feature, the extension sends encrypted progress data to the sync server so your progress can be restored across browsers or devices.
-
-- The encrypted sync blob is created on your device before upload
-- We cannot read the contents of your synced vocabulary data
-- License-key validation requests are sent only when you use Sync
-
-## What we never use for tracking
-
-- Browsing history for profiling or advertising
-- Page content for analytics or resale
-- Any personally identifiable information for marketing
+- URLs or domains you visit
+- Page content, text, or DOM structure
+- Browsing history or patterns
+- Any personally identifiable information
 
 ## Network requests
 
-The extension does not use analytics, ads, or telemetry. It only makes network requests if you enable the optional Sync feature, which contacts the Sideload Spanish sync service for license validation and encrypted backup/restore.
+The extension makes zero network requests. All data is local. There is no server, no analytics, no telemetry.
 
 ## Third-party services
 
-- Sideload Spanish sync service — stores only encrypted sync blobs for users who enable Sync
-- Lemon Squeezy — processes payments for Sync subscriptions
+None.
 
 ## Data deletion
 
-Uninstalling the extension removes local extension data from your browser. You can also reset progress from the extension popup at any time. If you use Sync and want remote data removed, contact us through the project issue tracker.
+Uninstalling the extension removes all stored data. You can also reset progress from the extension popup at any time.
 
 ## Contact
 
-For questions about this privacy policy: https://github.com/meowmeowco/sideloadspanish/issues
+For questions about this privacy policy: https://github.com/meowmeowco/sideload-spanish/issues
 
 ## Changes
 
-We will update this policy if the extension's data practices change. Any expanded sync or network behavior will require updated disclosure.
+We will update this policy if a future version adds network features (e.g., optional cloud sync). Any such changes will require explicit user opt-in.

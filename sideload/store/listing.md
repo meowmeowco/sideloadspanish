@@ -24,11 +24,10 @@ SMART FEATURES
 - Struggling word detection: words you keep seeing but can't remember get highlighted
 - Tier readiness: see at a glance whether you're ready to advance
 - Works on dynamic pages: infinite scroll, single-page apps — all handled
-- Optional encrypted Sync for restoring progress across browsers and devices
 
 YOUR PRIVACY
 
-By default, your progress stays on your device. No analytics, no ad tracking, no telemetry. If you choose to enable the optional paid Sync feature, the extension sends only encrypted progress data plus a license-key validation request to the Sideload Spanish sync service.
+Everything stays on your device. No accounts, no data collection, no tracking. Your progress is stored locally in your browser. We never see what pages you visit or what words you learn.
 
 WHAT'S INCLUDED
 
@@ -47,4 +46,4 @@ Education
 English
 
 ## Website
-https://github.com/meowmeowco/sideloadspanish
+https://github.com/meowmeowco/sideload-spanish
