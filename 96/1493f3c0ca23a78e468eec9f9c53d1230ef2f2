@@ -1,0 +1,32 @@
+.github/VOUCHED.td
+  s_eff29d5aca25b6::t_95df8d38d96bd4 11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "961493f3c0ca23a78e468eec9f9c53d1230ef2f2",
+  "prompts": {
+    "5949b2909e01ec99": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019d8c5f-0a7a-7a10-9f1e-f6f531946a6a",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Marty <saint@ghost.lt>",
+      "total_additions": 30,
+      "total_deletions": 0,
+      "accepted_lines": 30,
+      "overriden_lines": 0
+    }
+  },
+  "sessions": {
+    "s_eff29d5aca25b6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "71c5a2ee-f694-4cda-a4ae-64c64eb0085b",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Marty <saint@ghost.lt>"
+    }
+  }
+}
