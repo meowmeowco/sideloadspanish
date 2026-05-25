@@ -605,7 +605,7 @@
           show(word);
         });
 
-        document.addEventListener('scroll', hide, true);
+        document.addEventListener('scroll', hide, { capture: true, passive: true });
       } else {
         document.addEventListener('mouseover', (e) => {
           const word = e.target.closest('.sl-word');
