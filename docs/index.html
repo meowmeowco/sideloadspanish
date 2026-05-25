@@ -560,10 +560,12 @@
         tierEl.textContent = TIER_LABELS[tier] || 'Tier ' + tier;
         tip.appendChild(tierEl);
 
-        const actionEl = document.createElement('div');
-        actionEl.className = 'sl-tooltip__action';
-        actionEl.textContent = touchMode ? 'Tap again to dismiss' : 'Hover for details';
-        tip.appendChild(actionEl);
+        if (touchMode) {
+          const actionEl = document.createElement('div');
+          actionEl.className = 'sl-tooltip__action';
+          actionEl.textContent = 'Tap again to dismiss';
+          tip.appendChild(actionEl);
+        }
 
         tip.classList.add('sl-tooltip--visible');
 
