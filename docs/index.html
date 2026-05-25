@@ -144,7 +144,6 @@
       cursor: help;
       position: relative;
       transition: background-color 0.15s ease;
-      -webkit-tap-highlight-color: transparent;
     }
 
     .sl-word:hover {
@@ -562,7 +561,7 @@
 
         const actionEl = document.createElement('div');
         actionEl.className = 'sl-tooltip__action';
-        actionEl.textContent = touchMode ? 'Tap again to dismiss' : 'Hover to preview';
+        actionEl.textContent = touchMode ? 'Tap again to dismiss' : 'Move away to dismiss';
         tip.appendChild(actionEl);
 
         tip.classList.add('sl-tooltip--visible');
