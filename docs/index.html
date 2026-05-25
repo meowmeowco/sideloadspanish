@@ -597,6 +597,9 @@
             return;
           }
 
+          e.preventDefault();
+          e.stopPropagation();
+
           if (activeWord === word) {
             hide();
             return;
