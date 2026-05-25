@@ -521,7 +521,8 @@
         4: 'B2 \u2014 Upper Intermediate',
         5: 'C1 \u2014 Advanced',
       };
-      const touchMode = window.matchMedia('(hover: none), (pointer: coarse)').matches;
+      const TOUCH_DEVICE_QUERY = '(hover: none), (pointer: coarse)';
+      const touchMode = window.matchMedia(TOUCH_DEVICE_QUERY).matches;
 
       const tip = document.createElement('div');
       tip.className = 'sl-tooltip';
