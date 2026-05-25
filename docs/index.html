@@ -144,6 +144,7 @@
       cursor: help;
       position: relative;
       transition: background-color 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .sl-word:hover {
@@ -521,11 +522,13 @@
         4: 'B2 \u2014 Upper Intermediate',
         5: 'C1 \u2014 Advanced',
       };
+      const touchMode = window.matchMedia('(hover: none), (pointer: coarse)').matches;
 
       const tip = document.createElement('div');
       tip.className = 'sl-tooltip';
       tip.setAttribute('role', 'tooltip');
       document.body.appendChild(tip);
+      let activeWord = null;
 
       function show(target) {
         const original = target.dataset.original;
@@ -559,7 +562,7 @@
 
         const actionEl = document.createElement('div');
         actionEl.className = 'sl-tooltip__action';
-        actionEl.textContent = 'Click to mark as known';
+        actionEl.textContent = touchMode ? 'Tap again to dismiss' : 'Hover to preview';
         tip.appendChild(actionEl);
 
         tip.classList.add('sl-tooltip--visible');
@@ -581,17 +584,38 @@
 
       function hide() {
         tip.classList.remove('sl-tooltip--visible');
+        activeWord = null;
       }
 
-      document.addEventListener('mouseover', (e) => {
-        const word = e.target.closest('.sl-word');
-        if (word) show(word);
-      });
+      if (touchMode) {
+        document.addEventListener('click', (e) => {
+          const word = e.target.closest('.sl-word');
+          if (!word) {
+            hide();
+            return;
+          }
 
-      document.addEventListener('mouseout', (e) => {
-        const word = e.target.closest('.sl-word');
-        if (word) hide();
-      });
+          if (activeWord === word && tip.classList.contains('sl-tooltip--visible')) {
+            hide();
+            return;
+          }
+
+          activeWord = word;
+          show(word);
+        });
+
+        document.addEventListener('scroll', hide, true);
+      } else {
+        document.addEventListener('mouseover', (e) => {
+          const word = e.target.closest('.sl-word');
+          if (word) show(word);
+        });
+
+        document.addEventListener('mouseout', (e) => {
+          const word = e.target.closest('.sl-word');
+          if (word) hide();
+        });
+      }
     })();
   </script>
 
